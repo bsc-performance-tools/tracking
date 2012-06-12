@@ -1,5 +1,10 @@
 ChangeLog 'Tracking Tool'
 
+2012-06-12 German Llort <german.llort@bsc.es>
+	* Improved the script that generates the output plots to draw the clustering dimensions and the extrapolated metrics
+	* Added new tracking step that makes correlations by comparing the sequences of two different traces
+	* Several bug fixes
+
 2012-03-26 German Llort <german.llort@bsc.es>
 	* Added 'boost.m4' macros to config/ directory
 

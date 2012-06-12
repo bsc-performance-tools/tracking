@@ -1,16 +1,10 @@
-#include "SequenceTracker.h"
+#include "CallersTracker.h"
 
 int main(int argc, char **argv)
 {
-  SequenceTracker *SS1 = new SequenceTracker("align1", "clusters_info1");
-  SequenceTracker *SS2 = new SequenceTracker("align1", "clusters_info1");
 
+  CallersTracker *CT = new CallersTracker();
 
-  map<INT32, INT32> Unique;
-  Unique[1] = 1;
-  Unique[2] = 2;
-
-  ClusterCorrelationMatrix * CCM = SS1->CorrelateWithAnother( Unique, SS2 );
-  CCM->Print();
-  CCM->Stats();
+  Histo3D *H = CT->Compute3D("/home/bsc41/bsc41127/RUNS/BT/BT.16.S.chop1.clustered.prv", "/home/bsc41/bsc41127/projects/Tracking/tests/CallersLvl2.cfg");
 }
+

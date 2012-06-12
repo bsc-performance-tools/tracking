@@ -8,7 +8,7 @@ using std::cerr;
 using std::endl;
 #include "Tracking.h"
 
-#define DEFAULT_MIN_SCORE 0.85
+#define DEFAULT_MIN_SCORE 0.80
 
 string CallersCFG     = "";
 bool   CallersCFGRead = false;

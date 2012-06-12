@@ -26,8 +26,9 @@ public:
   {
   	ClusterCorrelationMatrix *ByCross;
 	ClusterCorrelationMatrix *ByCallers;
-    TwoWayCorrelation        *Paired;
+    TwoWayCorrelation        *PairedByMixer;
     TwoWayCorrelation        *PairedBySequence;
+    TwoWayCorrelation        *PairedCombo;
   } ClustersCorrelations_t;
   
   Tracking(vector<string> traces, vector<CID> last_clusters, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose);

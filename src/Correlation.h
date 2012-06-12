@@ -13,6 +13,10 @@ using std::map;
 #include "ClusterIDs.h"
 #include "kernelconnection.h"
 
+void PrintClusterGroup( ostream & channel, TClusterGroup &CG, string delim );
+int subset(TClusterGroup &g1, TClusterGroup &g2);
+
+
 class OneWayCorrelation
 {
 public:
@@ -41,9 +45,13 @@ public:
   TwoWayCorrelation();
   TwoWayCorrelation(vector<OneWayCorrelation *> &ForwardCorrelation, vector<OneWayCorrelation *> &BackwardCorrelation);
 
+  int size();
   void print();
   void add(TClusterGroup LeftGroup, TClusterGroup RightGroup);
+  void add(vector<TLinkedGroups> UnsortedGroups);
+
   void Combine();
+  TwoWayCorrelation * Split(TwoWayCorrelation *Specialized);
   vector<TLinkedGroups>::iterator begin();
   vector<TLinkedGroups>::iterator end();
   TClusterGroup FindLink( TClusterGroup &LeftGroup );

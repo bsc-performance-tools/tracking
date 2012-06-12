@@ -10,16 +10,11 @@ my $CLUSTER_DATA_FILE_SUFFIX = ".clustered.csv";
 my $CLUSTER_INFO_FILE_SUFFIX = ".clusters_info.csv";
 my $PARAVER_OFFSET           = 4;
 
-my $SUM      = "SUM";
-my $DENSITY  = "DENSITY";
-my $MIN      = "MIN";
-my $MAX      = "MAX";
-my $AVG_NORM = "NORM";
-
 # Parse arguments
 my $ARGC             = @ARGV;
 my $OUT_PREFIX       = $ARGV[$ARGC-1];
 my $NUM_INPUT_TRACES = $ARGC-1;
+
 
 my $SEQUENCE_FILE = $OUT_PREFIX.$SEQUENCE_FILE_SUFFIX;
 
@@ -56,8 +51,9 @@ while ($CurrentSequence = <FD>)
 my $NUM_FINAL_CLUSTERS = $CurrentCluster-1;
 
 my %Statistics = ();
-my %UniqueDimensions = ();
+my %ClusteringDimensions = ();
 
+# Clustering dimensions
 for (my $CurrentTrace = 0; $CurrentTrace < $NUM_INPUT_TRACES; $CurrentTrace++) 
 {
   my $TraceBaseName = $ARGV[$CurrentTrace];
@@ -81,7 +77,7 @@ for (my $CurrentTrace = 0; $CurrentTrace < $NUM_INPUT_TRACES; $CurrentTrace++)
       #print "Dims=".$NumberOfDimensions."\n";
       for (my $i=0; $i<$NumberOfDimensions; $i++)
       {
-        $UniqueDimensions{$Dimensions[$i]} = 1;
+        $ClusteringDimensions{$Dimensions[$i]} = 1;
       }
     }
     else
@@ -98,52 +94,160 @@ for (my $CurrentTrace = 0; $CurrentTrace < $NUM_INPUT_TRACES; $CurrentTrace++)
 
         #print $Dimensions[$i]." = ".$DimensionsValues[$i]."\n";
         
-        if (! exists $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID})
+        if (! exists $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace})
         {
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$SUM}     = $CurrentValue;
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$DENSITY} = 1;
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN}     = $CurrentValue;
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MAX}     = $CurrentValue;
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{SUM}       = 0;
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{DENSITY}   = 0;
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MIN} = $CurrentValue;
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MAX} = $CurrentValue;
         }
-        else
+        $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{SUM}     += $CurrentValue;
+        $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{DENSITY} ++;
+        if ($CurrentValue < $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MIN})
         {
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$SUM} += $CurrentValue;
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$DENSITY} ++;
-          if ($CurrentValue < $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN})
-          {
-            $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN} = $CurrentValue;
-          }
-          if ($CurrentValue > $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MAX})
-          {
-            $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MAX} = $CurrentValue;
-          }
-        } 
-        # Compute the average so far
-        $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$AVG} = 
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$SUM} / 
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$DENSITY};
-
-        # Normalize the average so far
-        if ($Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN} == $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MAX})
-        {
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$AVG_NORM} = 1;
-        } 
-        else 
-        {
-          $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$AVG_NORM} = 
-            ($Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$AVG} - $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN}) /
-            ($Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MAX} - $Statistics{$CurrentDimension}{$CurrentTrace}{$ClusterID}{$MIN});
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MIN} = $CurrentValue;
         }
+        if ($CurrentValue > $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MAX})
+        {
+          $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{LOCAL_MAX} = $CurrentValue;
+        }
+        
+        # Update the average so far
+        my $CurrentAvg = $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{SUM} /
+                         $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{DENSITY};
+        $Statistics{$CurrentDimension}{$ClusterID}{$CurrentTrace}{AVG} = $CurrentAvg;
       }
     }
     $LineNo ++;
   }
+
   close DATA;
 }
 
-foreach $Dimension (sort keys %UniqueDimensions)
+# Extrapolated metrics
+for (my $CurrentTrace = 0; $CurrentTrace < $NUM_INPUT_TRACES; $CurrentTrace++) 
 {
-  print "Writing tendency lines for metric '$Dimension'\n";
+  my $TraceBaseName = $ARGV[$CurrentTrace];
+
+  my $ClusterInfoFile = $TraceBaseName.$CLUSTER_INFO_FILE_SUFFIX;
+  open (INFO, $ClusterInfoFile) || die "Could not open '$ClusterInfoFile: $!\n'"; 
+
+  my $LineNo = 0;
+  my $FirstClusterIndex = 0;
+  my @DensityArray = ();
+  while ($Line = <INFO>)
+  {
+    chomp $Line;
+
+    my @LineTokens = split(/,/, $Line);
+    if ($LineTokens[0] eq "Cluster Name")
+    {
+      my @ClusterNamesArray = @LineTokens;
+      for (my $i=0; $i<@ClusterNamesArray; $i++)
+      {
+        if ("$ClusterNamesArray[$i]" eq "Cluster 1")
+        {
+          $FirstClusterIndex = $i;
+          last
+        }
+      }
+    }
+    elsif ($LineTokens[0] eq "Density")
+    {
+      @DensityArray = @LineTokens;
+    }
+    elsif ($LineNo > 4)
+    {
+      my @ExtrapolationValuesArray = @LineTokens;
+      my $ExtrapolationDimension = $ExtrapolationValuesArray[0];
+
+      my $C = $FirstClusterIndex;
+      my $Tokens = @ExtrapolationValuesArray;
+      for ($idx=$FirstClusterIndex; $idx<@ExtrapolationValuesArray; $idx++)
+      {
+        my $ClusterID = $idx - $FirstClusterIndex + 1;
+        $Statistics{$ExtrapolationDimension}{$ClusterID}{$CurrentTrace}{AVG}     = $ExtrapolationValuesArray[$idx];
+        $Statistics{$ExtrapolationDimension}{$ClusterID}{$CurrentTrace}{DENSITY} = $DensityArray[$idx];
+      }
+    }
+    $LineNo ++;
+  }
+  close INFO;
+}
+
+
+#foreach $Dimension (sort keys %Statistics)
+#{
+#  for (my $ClusterID=1; $ClusterID<=$NUM_FINAL_CLUSTERS; $ClusterID++)
+#  {
+#    for (my $Trace=0; $Trace<$NUM_INPUT_TRACES; $Trace++)
+#    {
+#print "DIM=$Dimension CID=$ClusterID Trace=$Trace AVG=".$Statistics{$Dimension}{$ClusterID}{$Trace}{AVG}." DENSITY=".$Statistics{$Dimension}{$ClusterID}{$Trace}{DENSITY}."\n";
+#    }
+#  }
+#}
+#exit;
+#
+## Normalize the averages of the clustering dimensions and the extrapolated metrics with respect to 
+## the min/max averages for that cluster across all experiments
+#
+#foreach $Dimension (sort keys %Statistics)
+#{
+##  foreach $ClusterID (sort keys %{$Statistics{$Dimension}})
+#  for (my $ClusterID=1; $ClusterID<=$NUM_FINAL_CLUSTERS; $ClusterID++)
+#  {
+#    for (my $Trace=0; $Trace<$NUM_INPUT_TRACES; $Trace++)
+#    {
+#      my $CurrentAvg = $Statistics{$Dimension}{$ClusterID}{$Trace}{AVG};
+#
+#      # Update the minimum and maximum average per cluster across all experiments
+#      if ((! exists $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN}) ||
+#          ($CurrentAvg < $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN}))
+#      {
+#        $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN} = $CurrentAvg;
+#      }
+#      if ((! exists $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX}) ||
+#          ($CurrentAvg > $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX}))
+#      {
+#        $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX} = $CurrentAvg;
+#      }
+#    }
+#
+#    # Normalize the averages
+##    foreach $Trace (sort keys %{$Statistics{$Dimension}{$ClusterID}})
+##    {
+##      if ($Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN} == $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX})
+##      {
+##        $Statistics{$Dimension}{$ClusterID}{$Trace}{AVG_NORM} = 0;
+##      }
+##      else
+##      {
+##        $Statistics{$Dimension}{$ClusterID}{$Trace}{AVG_NORM} =
+##          ($Statistics{$Dimension}{$ClusterID}{$Trace}{AVG} - $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN}) /
+##          ($Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX} - $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MIN});
+##      }
+##    }
+#    for (my $Trace=0; $Trace<$NUM_INPUT_TRACES; $Trace++)
+#    {
+#      $Statistics{$Dimension}{$ClusterID}{$Trace}{AVG_NORM} =
+#        ($Statistics{$Dimension}{$ClusterID}{$Trace}{AVG} / $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX});
+#
+#print "DIM=$Dimension CID=$ClusterID Trace=$Trace AVG=".$Statistics{$Dimension}{$ClusterID}{$Trace}{AVG}." AVG_MAX=".$Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX}." NORM=".$Statistics{$Dimension}{$ClusterID}{$Trace}{AVG_NORM}."\n";
+#
+##      $Statistics{$Dimension}{$ClusterID}{$Trace}{AVG_NORM} =
+##        ($Statistics{$Dimension}{$ClusterID}{$Trace}{AVG} / $Statistics{$Dimension}{$ClusterID}{CLUSTER_AVG_MAX}) /
+##        $Statistics{"PM_CYC"}{$ClusterID}{$Trace}{AVG};
+#    }
+#  }
+#}
+
+
+
+
+# Draw plots for clustering dimensions
+foreach $Dimension (sort keys %ClusteringDimensions)
+{
+  print "Writing trend lines for metric '$Dimension'\n";
 
   my $DimensionDataFile = $OUT_PREFIX.".".$Dimension.".csv";
   my $DimensionDispFile = $OUT_PREFIX.".".$Dimension.".dispersion.csv";
@@ -167,25 +271,18 @@ foreach $Dimension (sort keys %UniqueDimensions)
       my $SetDimensionMax      = -1;
       foreach $ClusterID (@ClusterSet)
       {
-        #print "CLUSTER $ClusterID\n";
-        #print "DIMENSION $Dimension\n";
-        #print "MIN=".$Statistics{$Dimension}{$Step}{$ClusterID}{$MIN}."\n";
-        #print "MAX=".$Statistics{$Dimension}{$Step}{$ClusterID}{$MAX}."\n";
-        #print "SUM=".$Statistics{$Dimension}{$Step}{$ClusterID}{$SUM}."\n";
-        #print "DENSITY=".$Statistics{$Dimension}{$Step}{$ClusterID}{$DENSITY}."\n";
-        #print "AVG=".$Statistics{$Dimension}{$Step}{$ClusterID}{$AVG}."\n";
-        my $Min = $Statistics{$Dimension}{$Step}{$ClusterID}{$MIN};
+        my $Min = $Statistics{$Dimension}{$ClusterID}{$Step}{LOCAL_MIN};
         if (($Min < $SetDimensionMin) || ($SetDimensionMin == -1))
         {
           $SetDimensionMin = $Min;
         }
-        my $Max = $Statistics{$Dimension}{$Step}{$ClusterID}{$MAX};
+        my $Max = $Statistics{$Dimension}{$ClusterID}{$Step}{LOCAL_MAX};
         if (($Max > $SetDimensionMax) || ($SetDimensionMax == -1))
         {
           $SetDimensionMax = $Max;
         }
-        my $Density = $Statistics{$Dimension}{$Step}{$ClusterID}{$DENSITY};
-        my $Avg     = $Statistics{$Dimension}{$Step}{$ClusterID}{$AVG};
+        my $Density = $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
+        my $Avg     = $Statistics{$Dimension}{$ClusterID}{$Step}{AVG};
         $DimensionWeightedAvg += $Avg * $Density;
         $TotalDensity += $Density;
       }
@@ -246,116 +343,57 @@ foreach $Dimension (sort keys %UniqueDimensions)
   close PLOT;
 }
 
-#sub getStat()
-#{
-#    my ($Stat, $AllStats) = @_;
-#
-#    $Value = `echo "$AllStats" | grep "$Stat" | cut -d= -f 2`;
-#    chomp $Value;
-#    return $Value;
-#}
-#
-#my $ARGC = @ARGV;
-#my $NUM_SEQUENCE   = $ARGV[0];
-#my $NUM_TRACE      = $ARGV[1];
-#my $OUT_PREFIX     = $ARGV[2];
-#my $TRACE_BASENAME = $ARGV[3];
-#my $CLUSTERS_GROUP = join( " ", @ARGV[4,$ARGC-1] );
-#
-#my $Stats = `@TRACKCLUSTERS_PREFIX@/aux_scripts/ComputeStats.pl $TRACE_BASENAME $CLUSTERS_GROUP`;
-#
-#$IPC           = &getStat("Weighted_IPC", $Stats);
-#$IPCDispersion = &getStat("Delta_IPC",    $Stats);
-#
-#open  OUT_IPC, ">>$OUT_PREFIX.IPC.data";
-#print OUT_IPC ($NUM_TRACE+1).",".$IPC.",".($NUM_SEQUENCE+1)."\n";
-#close OUT_IPC;
-#
-#open  OUT_IPC_DISP, ">>$OUT_PREFIX.IPC.Dispersion.data";
-#print OUT_IPC_DISP ($NUM_TRACE+1).",".$IPCDispersion.",".($NUM_SEQUENCE+1)."\n";
-#close OUT_IPC_DISP;
-#
 
-my %ExtrapolationStatistics = ();
 
-for (my $CurrentTrace = 0; $CurrentTrace < $NUM_INPUT_TRACES; $CurrentTrace++) 
+my %Normalized = ();
+foreach $Dimension (sort keys %Statistics)
 {
-  my $TraceBaseName = $ARGV[$CurrentTrace];
-
-  my $ClusterInfoFile = $TraceBaseName.$CLUSTER_INFO_FILE_SUFFIX;
-  open (INFO, $ClusterInfoFile) || die "Could not open '$ClusterInfoFile: $!\n'"; 
-
-  my $LineNo = 0;
-  my $FirstClusterIndex = 0;
-  my @DensityArray = ();
-  while ($Line = <INFO>)
+  for (my $FinalClusterID=1; $FinalClusterID<=$NUM_FINAL_CLUSTERS; $FinalClusterID++)
   {
-    chomp $Line;
+    for (my $Step=0; $Step<$NUM_INPUT_TRACES; $Step++)
+    {
+      my @ClusterSet = @{$Sequences{$FinalClusterID}{$Step}};
 
-    my @LineTokens = split(/,/, $Line);
-    if ($LineTokens[0] eq "Cluster Name")
-    {
-      my @ClusterNamesArray = @LineTokens;
-      for (my $i=0; $i<@ClusterNamesArray; $i++)
+      foreach $ClusterID (@ClusterSet)
       {
-        if ("$ClusterNamesArray[$i]" eq "Cluster 1")
+        my $CurrentAvg = $Statistics{$Dimension}{$ClusterID}{$Step}{AVG};
+
+        if ((! exists $Normalized{$Dimension}{$FinalClusterID}{AVG_MIN}) ||
+            ($CurrentAvg < $Normalized{$Dimension}{$FinalClusterID}{AVG_MIN}))
         {
-          $FirstClusterIndex = $i;
-          last
+          $Normalized{$Dimension}{$FinalClusterID}{AVG_MIN} = $CurrentAvg;
         }
-      }
-    }
-    elsif ($LineTokens[0] eq "Density")
-    {
-      @DensityArray = @LineTokens;
-    }
-    elsif ($LineNo > 4)
-    {
-      my @ExtrapolationValuesArray = @LineTokens;
-      my $ExtrapolationDimension = $ExtrapolationValuesArray[0];
-      my $MinAvgAllClusters = -1;
-      my $MaxAvgAllClusters = -1;
-      for (my $ClusterID=$FistClusterIndex; $ClusterID<@ExtrapolationValuesArray; $ClusterID++)
-      {
-        if (($ExtrapolationValuesArray[$ClusterID] < $MinAvgAllClusters) || ($MinAvgAllClusters == -1))
+        if ((! exists $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX}) ||
+            ($CurrentAvg > $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX}))
         {
-          $MinAvgAllClusters = $ExtrapolationValuesArray[$ClusterID];
+          $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX} = $CurrentAvg;
         }
-        if (($ExtrapolationValuesArray[$ClusterID] > $MaxAvgAllClusters) || ($MaxAvgAllClusters == -1))
-        {
-          $MaxAvgAllClusters = $ExtrapolationValuesArray[$ClusterID];
-        }
-      }
-      for (my $ClusterID=$FistClusterIndex; $ClusterID<@ExtrapolationValuesArray; $ClusterID++)
-      {
-        $ExtrapolationStatistics{$ExtrapolationDimension}{$CurrentTrace}{$ClusterID}{$AVG}      = $ExtrapolationValuesArray[$ClusterID];
-        $ExtrapolationStatistics{$ExtrapolationDimension}{$CurrentTrace}{$ClusterID}{$DENSITY}  = $DensityArray[$ClusterID];
-        $ExtrapolationStatistics{$ExtrapolationDimension}{$CurrentTrace}{$ClusterID}{$AVG_NORM} = 
-          ($ExtrapolationValuesArray[$ClusterID] - $MinAvgAllClusters) / ($MaxAvgAllClusters - $MinAvgAllClusters);
       }
     }
   }
-  close INFO;
 }
 
+
+# Draw plots per cluster
 foreach $FinalClusterID (sort { $a <=> $b } keys %Sequences)
 {
-  my $ClusterTrackingDataFile = $OUT_PREFIX.".Cluster".$FinalClusterID.".csv";
-  my $ClusterTrackingPlotFile = $OUT_PREFIX.".Cluster".$FinalClusterID.".gnuplot";
+  my $ClusterTrackingDataFile    = $OUT_PREFIX.".Cluster".$FinalClusterID.".csv";
+  my $ClusterTrackingRawDataFile = $OUT_PREFIX.".Cluster".$FinalClusterID.".raw.csv";
+  my $ClusterTrackingPlotFile    = $OUT_PREFIX.".Cluster".$FinalClusterID.".gnuplot";
 
-  open (DATA, ">$ClusterTrackingDataFile") || die "Could not create '$ClusterTrackingDataFile: $!\n'";
-  open (PLOT, ">$ClusterTrackingPlotFile") || die "Could not create '$ClusterTrackingPlotFile: $!\n'";
+  open (DATA, ">$ClusterTrackingDataFile")    || die "Could not create '$ClusterTrackingDataFile: $!\n'";
+  open (RAW,  ">$ClusterTrackingRawDataFile") || die "Could not create '$ClusterTrackingRawDataFile: $!\n'";
+  open (PLOT, ">$ClusterTrackingPlotFile")    || die "Could not create '$ClusterTrackingPlotFile: $!\n'";
 
   print DATA "Experiment";
-  foreach $ClusteringDimension (sort keys %Statistics)
+  print RAW  "Experiment";
+  foreach $Dimension (sort keys %Statistics)
   {
-    print DATA ",$ClusteringDimension";
-  }
-  foreach $ExtrapolationDimension (sort keys %ExtrapolationStats)
-  {
-    print DATA ",$ExtrapolationDimension";
+    print DATA ",$Dimension";
+    print RAW  ",$Dimension";
   }
   print DATA "\n";
+  print RAW  "\n";
 
   print PLOT "set datafile separator \",\"\n".
              "set title \"Cluster $FinalClusterID tracking\" font \",13\"\n".
@@ -363,58 +401,48 @@ foreach $FinalClusterID (sort { $a <=> $b } keys %Sequences)
              "set ylabel \"Normalized dimension\"\n".
              "set xtics 1\n".
              "set xrange [1:$NUM_INPUT_TRACES]\n".
-             "set yrange [0:1]\n".
              "plot ";
 
   for (my $Step=0; $Step<$NUM_INPUT_TRACES; $Step++)
   {
     print DATA ($Step+1);
-    foreach $ClusteringDimension (sort keys %Statistics)
+    print RAW  ($Step+1);
+    foreach $Dimension (sort keys %Statistics)
     {
       my @ClusterSet = @{$Sequences{$FinalClusterID}{$Step}};
       my $SetWeightedAverage = 0;
+      my $SetWeightedRawAverage = 0;
       my $SetTotalDensity = 0;
+
       foreach $ClusterID (@ClusterSet)
       {
-        $SetWeightedAverage += $Statistics{$ClusteringDimension}{$Step}{$ClusterID}{$AVG_NORM} * $Statistics{$ClusteringDimension}{$Step}{$ClusterID}{$DENSITY};
-        $SetTotalDensity += $Statistics{$ClusteringDimension}{$Step}{$ClusterID}{$DENSITY};
+        my $NormalizedAverage   = $Statistics{$Dimension}{$ClusterID}{$Step}{AVG} / $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX};
+        $SetWeightedAverage    += $NormalizedAverage * $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
+        $SetWeightedRawAverage += $Statistics{$Dimension}{$ClusterID}{$Step}{AVG} * $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
+        $SetTotalDensity += $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
       }
       if ($SetTotalDensity == 0) 
       {
-        $SetWeightedAverage = 0;
+        $SetWeightedAverage    = 0;
+        $SetWeightedRawAverage = 0;
       }
       else
       {
-        $SetWeightedAverage = $SetWeightedAverage / $SetTotalDensity;
+        $SetWeightedAverage    = $SetWeightedAverage / $SetTotalDensity;
+        $SetWeightedRawAverage = $SetWeightedRawAverage / $SetTotalDensity;
       }
       print DATA ",".$SetWeightedAverage;
-    }
-    foreach $ExtrapolationDimension (sort keys %ExtrapolationStatistics)
-    {
-      my @ClusterSet = @{$Sequences{$FinalClusterID}{$Step}};
-      my $SetWeightedAverage = 0;
-      my $SetTotalDensity = 0;
-      foreach $ClusterID (@ClusterSet)
-      {
-        $SetWeightedAverage += $ExtrapolationStatistics{$ExtrapolationDimension}{$Step}{$ClusterID}{$AVG_NORM} * $ExtrapolationStatistics{$ExtrapolationDimension}{$Step}{$ClusterID}{$DENSITY};
-        $SetTotalDensity += $ExtrapolationStatistics{$ExtrapolationDimension}{$Step}{$ClusterID}{$DENSITY};
-      }
-      $SetWeightedAverage = $SetWeightedAverage / $SetTotalDensity;
-      print DATA ",".$SetWeightedAverage
+      print RAW  ",".$SetWeightedRawAverage;
     }
     print DATA "\n";
+    print RAW  "\n";
   }
 
   my $CurrentPlottedDimension = 1;
   my $PLOT_DATA="";
-  foreach $ClusteringDimension (sort keys %Statistics)
+  foreach $Dimension (sort keys %Statistics)
   {
-    $PLOT_DATA .= "'".abs_path($ClusterTrackingDataFile)."' using 1:".($CurrentPlottedDimension+1)." w linespoints lw 3 title '$ClusteringDimension',\\\n";
-    $CurrentPlottedDimension ++;
-  }
-  foreach $ExtrapolationDimension (sort keys %ExtrapolationStats)
-  {
-    $PLOT_DATA .= "'".abs_path($ClusterTrackingDataFile)."' using 1:".($CurrentPlottedDimension+1)." w linespoints lw 3 title '$ExtrapolationDimension',\\\n";
+    $PLOT_DATA .= "'".abs_path($ClusterTrackingDataFile)."' using 1:".($CurrentPlottedDimension+1)." w linespoints lw 3 title '$Dimension',\\\n";
     $CurrentPlottedDimension ++;
   }
   chop $PLOT_DATA; chop $PLOT_DATA; chop $PLOT_DATA;
@@ -422,6 +450,7 @@ foreach $FinalClusterID (sort { $a <=> $b } keys %Sequences)
   print PLOT "pause -1 \"Hit return to continue...\"\n";
 
   close DATA;
+  close RAW;
   close PLOT;
 }
 

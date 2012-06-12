@@ -186,7 +186,7 @@ for ($i=0; $i<@InputTraces; $i++)
 		else
 		{
             ### Preprocess sequence file to eliminate sequences that are NOISE ONLY
-            my $SequenceFileProcessed = $SequenceFile."tmp";
+            my $SequenceFileProcessed = $SequenceFile.".tmp";
             open(SEQ, $SequenceFile) or die("Could not open sequence file '$str': $!\n");
             open(SEQ_TMP, ">$SequenceFileProcessed") or die("Could not open file for writing: $!\n");
 

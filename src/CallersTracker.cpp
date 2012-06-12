@@ -137,18 +137,20 @@ void CallersTracker::parseHistogram(Histogram * histo, Histo3D *&H)
           /* Get the total # bursts for this caller */
           CurrentCallerBursts = histototals->getTotal(stat_nbursts, iCol, iPlane);
   
-          /* DEBUG
-          cout << histo->getPlaneLabel(iPlane) << " - " << histo->getColumnLabel(iCol) << " = ";
+          /* DEBUG 
+          cout << histo->getPlaneLabel(iPlane) << " (" << iPlane << ") " << " - " << histo->getColumnLabel(iCol) << " = ";
           cout << CurrentCallerBursts << " (" << CurrentCallerBursts*100/TotalBurstsPlane << "%)" << endl; */
 
-          /* Store current caller for current cluster */
-          CID CurrentCluster = iPlane - FIRST_CLUSTER + 1;  
-          TCaller ClusterCaller;
-          ClusterCaller.CallerName = histo->getColumnLabel(iCol);
-          ClusterCaller.NumBursts  = (int)CurrentCallerBursts;
-          ClusterCaller.Pct        = CurrentCallerBursts*100/TotalBurstsPlane;
-  
-          if (CurrentCluster > 0) H->insert(CurrentCluster, ClusterCaller);
+          CID CurrentCluster;
+          if (sscanf(histo->getPlaneLabel(iPlane).c_str(), "Cluster %d", &CurrentCluster) == 1)
+          {
+            /* Store current caller for current cluster */
+            TCaller ClusterCaller;
+            ClusterCaller.CallerName = histo->getColumnLabel(iCol);
+            ClusterCaller.NumBursts  = (int)CurrentCallerBursts;
+            ClusterCaller.Pct        = CurrentCallerBursts*100/TotalBurstsPlane;
+            H->insert(CurrentCluster, ClusterCaller);
+          }
         }
       }
     }

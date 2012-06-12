@@ -27,6 +27,22 @@ void PrintClusterGroup( ostream & channel, TClusterGroup &CG, string delim )
     }
 }
 
+int subset(TClusterGroup &g1, TClusterGroup &g2)
+{
+  TClusterGroup *small, *big;
+  TClusterGroup::iterator it;
+
+  if (g1.size() <= g2.size()) small = &g1, big = &g2;
+  else small = &g2, big = &g1;
+
+  for (it = small->begin(); it != small->end(); ++it)
+  {
+    if (big->find(*it) == big->end()) return 0;
+  }
+
+  return ((g1.size() < g2.size()) ? 1 : 2);
+}
+
 OneWayCorrelation::OneWayCorrelation(CID cluster_id)
 {
   ClusterID = cluster_id;
@@ -133,15 +149,111 @@ TwoWayCorrelation::TwoWayCorrelation(vector<OneWayCorrelation *> &Forward, vecto
   Combine();
 }
 
+/**
+ * Splits the rules of the current correlation with the more specialized rules of the correlation given by parameter, and returns 
+ * a new correlation object that contains more specific rules.
+ */
+TwoWayCorrelation * TwoWayCorrelation::Split(TwoWayCorrelation *Specialized)
+{
+  TwoWayCorrelation * res = NULL;
+  res = new TwoWayCorrelation();
+
+  vector<TLinkedGroups>::iterator it;
+  vector<TLinkedGroups> tmp;
+
+  for (it=begin(); it!=end(); ++it)
+  {
+    TClusterGroup Left, Right;
+    Left  = it->first;
+    Right = it->second;
+
+    vector<TLinkedGroups>::iterator it2;
+    for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
+    {
+      TClusterGroup Left2, Right2;
+      Left2  = it2->first;
+      Right2 = it2->second;
+
+      if ( (subset(Left, Left2) == 2) ||(subset(Right, Right2) == 2) )
+      {
+        TClusterGroup SubstractLeft, SubstractRight;
+        set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(), 
+          std::inserter(SubstractLeft, SubstractLeft.end()));
+        set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(), 
+          std::inserter(SubstractRight, SubstractRight.end()));
+        Left = SubstractLeft; 
+        Right = SubstractRight;
+	    
+        tmp.push_back( make_pair( Left2, Right2 ) );
+      }
+    }
+    if ((Left.size() > 0) || (Right.size() > 0))
+    {
+      tmp.push_back( make_pair( Left, Right ) );
+    }
+  }  
+  res->add(tmp);
+
+  res->Combine();
+
+  return res;
+}
+
 TwoWayCorrelation::TwoWayCorrelation()
 {
   Links.clear();
 }
 
+int TwoWayCorrelation::size()
+{
+  return Links.size();
+}
+
 void TwoWayCorrelation::add(TClusterGroup LeftGroup, TClusterGroup RightGroup)
 {
+  /* This loop checks for any pre-existing link with the same cluster groups, not to insert repeated links */
+  for (int i=0; i<Links.size(); i++)
+  {
+    if ((Links[i].first == LeftGroup) && (Links[i].second == RightGroup))
+    {
+      return;
+    }
+  } 
   TLinkedGroups p = make_pair(LeftGroup, RightGroup);
   Links.push_back(p);
+}
+
+/* Sorts the given links by the lowest first cluster in the left set */
+void TwoWayCorrelation::add(vector<TLinkedGroups> Input)
+{
+  vector<TLinkedGroups> UnsortedGroups = Input;
+
+  while (UnsortedGroups.size() > 0)
+  {
+    int i = 0;
+    int min_index = 0;
+    int min_cluster = -1;
+
+    for (i=0; i<UnsortedGroups.size(); i++)
+    {
+      TLinkedGroups CurrentLink;
+      CurrentLink = UnsortedGroups[i];
+      TClusterGroup Left;
+      Left = CurrentLink.first;
+
+      if (Left.size() > 0)
+      {
+        CID first_cluster = *(Left.begin());
+        if ((min_cluster < 0) || (first_cluster < min_cluster))
+        {
+          min_cluster = first_cluster;
+          min_index = i;
+        }
+      }
+    }
+    add(UnsortedGroups[min_index].first, UnsortedGroups[min_index].second);
+    UnsortedGroups.erase(UnsortedGroups.begin() + min_index);  
+  }
 }
 
 vector<TLinkedGroups>::iterator TwoWayCorrelation::begin()

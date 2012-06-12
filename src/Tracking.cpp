@@ -37,6 +37,9 @@ Tracking::Tracking(vector<string> traces, vector<CID> last_clusters, string call
     TracesCorrelationMatrix[i] = (ClustersCorrelations_t *)malloc(NumberOfTraces * sizeof(ClustersCorrelations_t));
     TracesCorrelationMatrix[i]->ByCross    = NULL;
     TracesCorrelationMatrix[i]->ByCallers  = NULL;
+    TracesCorrelationMatrix[i]->PairedByMixer    = NULL;
+    TracesCorrelationMatrix[i]->PairedBySequence = NULL;
+    TracesCorrelationMatrix[i]->PairedCombo      = NULL;
   }
 
   PrepareFileNames();
@@ -50,6 +53,10 @@ Tracking::~Tracking()
     {
       if (TracesCorrelationMatrix[i]->ByCross    != NULL) delete TracesCorrelationMatrix[i]->ByCross;
       if (TracesCorrelationMatrix[i]->ByCallers  != NULL) delete TracesCorrelationMatrix[i]->ByCallers;
+      if (TracesCorrelationMatrix[i]->PairedByMixer    != NULL) delete TracesCorrelationMatrix[i]->PairedByMixer;
+      if (TracesCorrelationMatrix[i]->PairedBySequence != NULL) delete TracesCorrelationMatrix[i]->PairedBySequence;
+      if (TracesCorrelationMatrix[i]->PairedCombo      != NULL) delete TracesCorrelationMatrix[i]->PairedCombo;
+
       free(TracesCorrelationMatrix[i]);
     }
     free(TracesCorrelationMatrix);
@@ -159,17 +166,18 @@ void Tracking::CorrelateTraces()
     Mix(trace1, trace2, STs, BySimultaneity, Forward);
     Mix(trace2, trace1, STs, BySimultaneity, Backward);
 
-    TracesCorrelationMatrix[trace1][trace2].Paired = new TwoWayCorrelation(Forward, Backward);
+    TracesCorrelationMatrix[trace1][trace2].PairedByMixer = new TwoWayCorrelation(Forward, Backward);
     if (Verbose)
     {
       cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << ":" << endl << endl;
-      TracesCorrelationMatrix[trace1][trace2].Paired->print();
+      TracesCorrelationMatrix[trace1][trace2].PairedByMixer->print();
     }
 
     if ((UseSequence) && (STs[trace1]->isAvailable()) && (STs[trace2]->isAvailable()))
     {
       double Score1 = STs[trace1]->getGlobalScore();
       double Score2 = STs[trace2]->getGlobalScore();
+
       if ((Score1 < MinimumScore) || (Score2 < MinimumScore))
       {
         cout << "WARNING: Skipping time sequences correlation between traces " << trace1+1 << " and " << trace2+1;
@@ -179,27 +187,44 @@ void Tracking::CorrelateTraces()
       {
         /* Get the correlations that are univocal */
         map<CID, CID> UniqueCorrelations;
-        TracesCorrelationMatrix[trace1][trace2].Paired->GetUnique(UniqueCorrelations);
+        TracesCorrelationMatrix[trace1][trace2].PairedByMixer->GetUnique(UniqueCorrelations);
         if (Verbose)
         {
           cout << "(" << UniqueCorrelations.size() << " univocal correlations)" << endl;
         }
-        TracesCorrelationMatrix[trace1][trace2].PairedBySequence = STs[trace1]->PairWithAnother(
-           UniqueCorrelations, 
-           STs[trace2], 
-           InputLastClusters[trace1], 
-           InputLastClusters[trace2]);
-
-        TracesCorrelationMatrix[trace1][trace2].PairedBySequence->Combine();
-        if (Verbose)
+        if (UniqueCorrelations.size() > 0)
         {
-          cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << " (AS REPORTED BY SEQUENCE TRACKER):" << endl << endl;
-          TracesCorrelationMatrix[trace1][trace2].PairedBySequence->print();
+          TracesCorrelationMatrix[trace1][trace2].PairedBySequence = STs[trace1]->PairWithAnother(
+             UniqueCorrelations, 
+             STs[trace2], 
+             InputLastClusters[trace1], 
+             InputLastClusters[trace2]);
+
+//          TracesCorrelationMatrix[trace1][trace2].PairedBySequence->Combine();
+
+          if (TracesCorrelationMatrix[trace1][trace2].PairedBySequence->size() > 0)
+          {
+            if (Verbose)
+            {
+              cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << " (AS REPORTED BY SEQUENCE TRACKER):" << endl << endl;
+              TracesCorrelationMatrix[trace1][trace2].PairedBySequence->print();
+            }
+          
+            cout << endl << "+ Combining heuristic and sequence correlations:" << endl << endl;
+            TracesCorrelationMatrix[trace1][trace2].PairedCombo = 
+              TracesCorrelationMatrix[trace1][trace2].PairedByMixer->Split( 
+                TracesCorrelationMatrix[trace1][trace2].PairedBySequence );
+            TracesCorrelationMatrix[trace1][trace2].PairedCombo->print();
+          }
         }
       }
     }
+    if (TracesCorrelationMatrix[trace1][trace2].PairedCombo == NULL)
+    {
+      TracesCorrelationMatrix[trace1][trace2].PairedCombo = TracesCorrelationMatrix[trace1][trace2].PairedByMixer;
+    }
   }
-
+ 
   BuildFinalSequence();
 
   GeneratePlots();
@@ -227,7 +252,7 @@ void Tracking::BuildFinalSequence()
   for (int trace1=0; trace1<NumberOfTraces-1; trace1++)
   {
     int trace2 = trace1+1;
-    AllPairs.push_back ( TracesCorrelationMatrix[trace1][trace2].Paired );
+    AllPairs.push_back ( TracesCorrelationMatrix[trace1][trace2].PairedCombo );
   }
 
   FinalSequence = new NWayCorrelation(AllPairs);
@@ -302,7 +327,7 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
     /* Get initial correlations from classification */
     if (UseCrossClassify)
     {
-      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, -1);
+      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 10);
       CombinedCorrelation->join(ClassifyCorrelation);
     }
 
@@ -340,6 +365,7 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
       if ((CombinedCorrelation->size() == 0) || (CallersCorrelation->size() == 1))
       {
         CombinedCorrelation = CallersCorrelation;
+//        CombinedCorrelation = ByCallers->getCorrelation(CurrentClusterID, -1);
       } 
     }
 
@@ -370,6 +396,7 @@ void Tracking::GeneratePlots()
   }
   CMD += OutputPrefix;
 
+  cout << CMD << endl;
   system(CMD.c_str());
   cout << "Plotting done!" << endl << endl;
 }

@@ -5,6 +5,7 @@ using std::endl;
 #include "ClusterCorrelationMatrix.h"
 #include "SequenceTracker.h"
 #include "Utils.h"
+#include "Correlation.h"
 
 SequenceTracker::SequenceTracker(string AlignFile, string CINFOFile)
 {
@@ -199,6 +200,7 @@ TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrela
     if ((size1 == size2) && (size1 > 0))
     {
       /* DEBUG 
+      cout << "SEQUENCE PAIR:\n";
       SS->PrintSequence(FilteredSeq1);
       cout << " vs " << endl;
       SS->PrintSequence(FilteredSeq2);
@@ -222,6 +224,14 @@ TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrela
           CID ClusterID = it2->first;
           RightGroup.insert( ClusterID );
         }
+        /* DEBUG
+        cout << "***** ADDING ";
+        PrintClusterGroup(cout, LeftGroup, ",");
+        cout << " <-> ";
+        PrintClusterGroup(cout, RightGroup, ",");
+        cout << endl; */
+
+        /* XXX Make add not to insert repeated links! */
         PairedSequences->add( LeftGroup, RightGroup );
       }
     }
