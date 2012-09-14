@@ -360,6 +360,8 @@ TClusterGroup TwoWayCorrelation::FindLink(TClusterGroup &LeftGroup)
       set_intersection( Left.begin(), Left.end(), LeftGroup.begin(), LeftGroup.end(), inserter(isec, isec.begin()) );
       if (isec.size() > 0)
       {
+#if 0
+        /* If there are multiple links, returns the one that intersects more with the input set */
         if (isec.size() > CandidatesMaxSetSize)
         {
           CandidatesMaxSetSize = isec.size();
@@ -370,6 +372,10 @@ TClusterGroup TwoWayCorrelation::FindLink(TClusterGroup &LeftGroup)
         {
           Candidates.push_back( it );
         }
+#else
+        /* Joins all possible candidates */
+        Candidates.push_back( it );
+#endif
       }
     }
   }

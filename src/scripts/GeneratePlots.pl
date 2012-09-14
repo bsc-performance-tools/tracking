@@ -416,7 +416,11 @@ foreach $FinalClusterID (sort { $a <=> $b } keys %Sequences)
 
       foreach $ClusterID (@ClusterSet)
       {
-        my $NormalizedAverage   = $Statistics{$Dimension}{$ClusterID}{$Step}{AVG} / $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX};
+        my $NormalizedAverage  = 0;
+        if ( $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX} != 0 )
+        {
+          $NormalizedAverage   = $Statistics{$Dimension}{$ClusterID}{$Step}{AVG} / $Normalized{$Dimension}{$FinalClusterID}{AVG_MAX};
+        }
         $SetWeightedAverage    += $NormalizedAverage * $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
         $SetWeightedRawAverage += $Statistics{$Dimension}{$ClusterID}{$Step}{AVG} * $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
         $SetTotalDensity += $Statistics{$Dimension}{$ClusterID}{$Step}{DENSITY};
