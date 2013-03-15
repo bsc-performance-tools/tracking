@@ -1,16 +1,19 @@
 ChangeLog 'Tracking Tool'
 
+2013-03-15 German Llort <german.llort@bsc.es>
+	+ Added a new Python GUI. The one under scripts/ will be deleted.
+
 2012-09-14 German Llort <german.llort@bsc.es>
 	* Changed the generation of the final sequences. When there's more than one path available, unifies them all
 
 2012-06-12 German Llort <german.llort@bsc.es>
 	* Improved the script that generates the output plots to draw the clustering dimensions and the extrapolated metrics
-	* Added new tracking step that makes correlations by comparing the sequences of two different traces
+	+ Added new tracking step that makes correlations by comparing the sequences of two different traces
 	* Several bug fixes
 
 2012-03-26 German Llort <german.llort@bsc.es>
-	* Added 'boost.m4' macros to config/ directory
+	+ Added 'boost.m4' macros to config/ directory
 
 2012-03-26 German Llort <german.llort@bsc.es>
-	* Initial revision uploaded to SVN
+	+ Initial revision uploaded to SVN
 
