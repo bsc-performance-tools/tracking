@@ -4,6 +4,8 @@ AC_INIT([libANNClassify], [0.03], [tools@bsc.es])
 AC_CONFIG_AUX_DIR([.])
 AC_CANONICAL_SYSTEM
 
+AM_CONFIG_HEADER(config.h)
+
 AC_SUBST(PACKAGE)
 AC_SUBST(VERSION)
 

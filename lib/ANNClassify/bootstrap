@@ -1,10 +1,5 @@
 #!/bin/sh
 
-for dir in lib/ANNClassify
-do
-  cd $dir && ./bootstrap && cd -
-done
-
 libtoolize --automake --force --copy \
 && aclocal -I config \
 && autoheader \
