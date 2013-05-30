@@ -5,7 +5,7 @@ using std::endl;
 #include <sstream>
 using std::stringstream;
 #include "CrossClassifier.h"
-#include "ClusterCorrelationMatrix.h"
+#include "CorrelationMatrix.h"
 
 CrossClassifier::CrossClassifier(string CSV1, string CSV2, string OutputFile, double Epsilon)
 {
@@ -27,7 +27,7 @@ CrossClassifier::~CrossClassifier()
   delete CS2;
 }
 
-ClusterCorrelationMatrix * CrossClassifier::CrossClassify()
+CorrelationMatrix * CrossClassifier::CrossClassify()
 {
   vector<CID> Clustered1, Clustered1In2;
 
@@ -38,7 +38,7 @@ ClusterCorrelationMatrix * CrossClassifier::CrossClassify()
   CT->ClassifyPoints(CS1->getNumDimensions(), CS1->getNormDimensions(), Clustered1In2, CrossClassifyOutputFile.c_str());
 
   /* Return a correlation between points in clustering 1 and the same points classified in clustering 2 */
-  ClusterCorrelationMatrix *CCM = new ClusterCorrelationMatrix(Clustered1, Clustered1In2);
+  CorrelationMatrix *CCM = new CorrelationMatrix(Clustered1, Clustered1In2);
 
   return CCM;
 }

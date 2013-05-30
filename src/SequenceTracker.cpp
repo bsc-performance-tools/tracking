@@ -2,10 +2,11 @@
 using std::cout;
 using std::cerr;
 using std::endl;
-#include "ClusterCorrelationMatrix.h"
+#include <libgen.h>
+#include "CorrelationMatrix.h"
 #include "SequenceTracker.h"
 #include "Utils.h"
-#include "Correlation.h"
+#include "Links.h"
 
 SequenceTracker::SequenceTracker(string AlignFile, string CINFOFile)
 {
@@ -74,43 +75,43 @@ void SequenceTracker::dump()
   }
 }
 
-ClusterCorrelationMatrix * SequenceTracker::getClustersSimultaneity()
+CorrelationMatrix * SequenceTracker::getClustersSimultaneity()
 {
   if (SS == NULL) return NULL;
 
   int ClustersInSequence = getNumberOfClusters();
-  ClusterCorrelationMatrix *CCM = new ClusterCorrelationMatrix(ClustersInSequence, ClustersInSequence);
+  CorrelationMatrix *CCM = new CorrelationMatrix(ClustersInSequence, ClustersInSequence);
 
   for (int i=1; i<=ClustersInSequence; i++)
   {
     map<INT32, int> Simultaneous; /* map[cluster] = probability of appearing together */
     int NumberOfAppearances = SS->FindSimultaneousClusters( i, Simultaneous );
 
-    /* DEBUG
-    cout << "Simultaneity for cluster " << i << " = "; */
+    /* DEBUG 
+    cout << "[DEBUG] Simultaneity for cluster " << i << " = "; */
     map<INT32, int>::iterator it;
     for (it = Simultaneous.begin(); it != Simultaneous.end(); it ++)
     {
       int SeenCount = it->second;
-      /* DEBUG
+      /* DEBUG 
       cout << it->first << " (" << (SeenCount * 100)/NumberOfAppearances << "%) "; */
       CCM->SetStats(i, it->first, SeenCount, (SeenCount * 100)/NumberOfAppearances);
     }
     /* DEBUG
-    cout << endl; */
+    cout << endl; */ 
   }
   return CCM;
 }
 
 
-ClusterCorrelationMatrix * SequenceTracker::CorrelateWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2)
+CorrelationMatrix * SequenceTracker::CorrelateWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2)
 {
   map<TClusterScoreMap, TClusterScoreMap> SequenceMatchings;
   map<TClusterScoreMap, TClusterScoreMap>::iterator it;
 
   SS->TimeCorrelation(UniqueCorrelations, ST2->SS, SequenceMatchings);
 
-  ClusterCorrelationMatrix *CCM = new ClusterCorrelationMatrix(getNumberOfClusters(), ST2->getNumberOfClusters());
+  CorrelationMatrix *CCM = new CorrelationMatrix(getNumberOfClusters(), ST2->getNumberOfClusters());
   for (it = SequenceMatchings.begin(); it != SequenceMatchings.end(); it++)
   {
     TClusterScoreMap left  = it->first ;
@@ -138,14 +139,14 @@ ClusterCorrelationMatrix * SequenceTracker::CorrelateWithAnother(map<CID, CID> U
   return CCM;
 }
 
-TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2)
+DoubleLink * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2)
 {
   map<TClusterScoreMap, TClusterScoreMap> SequenceMatchings;
   map<TClusterScoreMap, TClusterScoreMap>::iterator it;
 
   SS->TimeCorrelation(UniqueCorrelations, ST2->SS, SequenceMatchings);
 
-  TwoWayCorrelation *PairedSequences = new TwoWayCorrelation();
+  DoubleLink *PairedSequences = new DoubleLink();
   for (it = SequenceMatchings.begin(); it != SequenceMatchings.end(); it++)
   {
     TClusterScoreMap left  = it->first ;
@@ -153,7 +154,7 @@ TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrela
     TClusterScoreMap right = it->first ;
     TClusterScoreMap::iterator it2;
 
-    TClusterGroup LeftGroup, RightGroup;
+    TClustersSet LeftGroup, RightGroup;
     for (it1 = left.begin(); it1 != left.end(); it1++)
     {
       CID ClusterID = it1->first; 
@@ -169,14 +170,14 @@ TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrela
   return PairedSequences;
 }
 
-TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2, CID LastClusterTrace1, CID LastClusterTrace2)
+DoubleLink * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2, CID LastClusterTrace1, CID LastClusterTrace2)
 {
-  TwoWayCorrelation *PairedSequences = new TwoWayCorrelation();
+  DoubleLink *PairedSequences = new DoubleLink();
 /*
   map<CID, CID>::iterator it3;
   for (it3 = UniqueCorrelations.begin(); it3 != UniqueCorrelations.end(); ++it3)
   {
-    TClusterGroup LeftGroup, RightGroup;
+    TClustersSet LeftGroup, RightGroup;
     LeftGroup.insert(it3->first);
     RightGroup.insert(it3->second);
     PairedSequences->add( LeftGroup, RightGroup );
@@ -213,7 +214,7 @@ TwoWayCorrelation * SequenceTracker::PairWithAnother(map<CID, CID> UniqueCorrela
 
         TClusterScoreMap::iterator it1;
         TClusterScoreMap::iterator it2;
-        TClusterGroup LeftGroup, RightGroup;
+        TClustersSet LeftGroup, RightGroup;
         for (it1 = left.begin(); it1 != left.end(); it1++)
         {
           CID ClusterID = it1->first;

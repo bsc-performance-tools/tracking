@@ -1,5 +1,8 @@
 ChangeLog 'Tracking Tool'
 
+2013-05-30 German Llort <german.llort@bsc.es>
+	* Everything ported to the newest ClusteringSuite. Several fixes. New GUI. Upgraded to version 2.5.
+
 2013-03-15 German Llort <german.llort@bsc.es>
 	+ Added a new Python GUI. The one under scripts/ will be deleted.
 

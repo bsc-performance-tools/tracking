@@ -29,8 +29,8 @@ TraceReconstructor::TraceReconstructor(
 
   opts->set_filter_events( true );
   opts->set_discard_given_types( true );
-  TraceOptions::TFilterTypes dummyTypes;
-  dummyTypes[0].type = 1234567890;
+  // TraceOptions::TFilterTypes dummyTypes;
+  // dummyTypes[0].type = 1234567890;
   opts->set_filter_last_type( 1 );
 
   opts->set_filter_comms( true );

@@ -6,7 +6,7 @@ using std::string;
 #include <vector>
 using std::vector;
 #include "ClassifyTool.h"
-#include "ClusterCorrelationMatrix.h"
+#include "CorrelationMatrix.h"
 
 class CrossClassifier
 {
@@ -14,7 +14,7 @@ public:
   CrossClassifier(string CSV1, string CSV2, string OutputFile, double Epsilon = 1.0);
   ~CrossClassifier();
 
-  ClusterCorrelationMatrix * CrossClassify();
+  CorrelationMatrix * CrossClassify();
 
 private:
   ClusteringState *CS1, *CS2;

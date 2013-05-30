@@ -1,33 +1,38 @@
+#include <stdlib.h>
 #include <iostream>
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::ios;
+using std::ios_base;
 #include <sstream>
 using std::stringstream;
+using std::ofstream;
 #include "Tracking.h"
+#include "Utils.h"
 #include "CrossClassifier.h"
 #include "CallersTracker.h"
 #include "SequenceTracker.h"
-#include "Utils.h"
 #include "TraceReconstructor.h"
 
-Tracking::Tracking(vector<string> traces, vector<CID> last_clusters, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose)
+Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose)
 {
-  InputTraces       = traces;
-  InputLastClusters = last_clusters;
-  NumberOfTraces    = traces.size();
-  Epsilon           = 0.018;
-  CallersCFG        = callers_cfg;
-  OutputPrefix      = prefix;
-  Reconstruct       = reconstruct;
-  Verbose           = verbose;
-  FinalSequence     = NULL;
-  MinimumScore      = min_score;
+  /* Configure the tracking algorithm and the different trackers */
+  InputTraces        = traces;
+  NumClustersToTrack = num_clusters_to_track;
+  NumberOfTraces     = traces.size();
+  Epsilon            = 0.018;
+  CallersCFG         = callers_cfg;
+  OutputPrefix       = prefix;
+  Reconstruct        = reconstruct;
+  Verbose            = verbose;
+  FinalSequence      = NULL;
+  MinimumScore       = min_score;
 
-  UseCallers       = false;
-  if (callers_cfg.size() > 0) UseCallers = true;
-  UseSequence      = true;
+  /* Select which trackers will be used */
   UseCrossClassify = true;
+  UseCallers       = (callers_cfg.size() > 0 ? true : false);
+  UseAlignment     = true;
 
   TracesCorrelationMatrix = NULL;
 
@@ -63,23 +68,79 @@ Tracking::~Tracking()
   }
 }
 
+/**
+ * Count the total number of clusters from the clusters_info.csv file
+ */
+int ReadNumClustersFromFile(string ClustersInfoFileName)
+{
+  ifstream     ClustersInfoStream;
+  string       Token;
+  string       Header;
+  stringstream HeaderStream;
+  int          TotalClusters = 0;
+
+  ClustersInfoStream.open(ClustersInfoFileName.c_str(), ios_base::in);
+  if (!ClustersInfoStream)
+  {
+    cerr << "Error: Unable to open clusters information file '"+ClustersInfoFileName+"'";
+    exit(-1);
+  }
+
+  getline(ClustersInfoStream, Header); /* Header */
+
+  HeaderStream << Header;
+  while (getline(HeaderStream, Token, ','))
+  {
+    TotalClusters ++;
+  }
+  TotalClusters -= 2; /* The two first columns are "Cluster name" and "NOISE" */
+
+  return TotalClusters;
+}
+
 void Tracking::PrepareFileNames()
 {
   for (int i=0; i<NumberOfTraces; i++)
   {
     string CurrentTrace  = InputTraces[i];
     string TraceBaseName = (RemoveExtension(CurrentTrace).c_str());
-    string CSVFile       = TraceBaseName + CSV_NORM_SUFFIX;
-    string CINFOFile     = TraceBaseName + CINFO_SUFFIX;
-    string AlignFile     = TraceBaseName + ALIGN_SUFFIX;
-
-    InputCSVs.push_back( CSVFile );
+    string CSVOrig       = TraceBaseName + SUFFIX_ORIG_CSV;
+    string CSVNorm       = TraceBaseName + SUFFIX_NORM_CSV;
+    string CINFOFile     = TraceBaseName + SUFFIX_CINFO;
+    string AlignFile     = TraceBaseName + SUFFIX_ALIGN;
+    if (UseCallers)
+    {
+      string HistoCallersFile = CurrentTrace + "." + RemoveExtension(CallersCFG) + SUFFIX_HISTOGRAM_CALLERS_PER_CLUSTER;
+      OutputHistoCallers.push_back( HistoCallersFile );
+    }
+    OrigCSVs.push_back( CSVOrig );
+    InputCSVs.push_back( CSVNorm );
     InputCINFOs.push_back( CINFOFile );
+    TotalClusters.push_back( ReadNumClustersFromFile(CINFOFile) );
     InputAlignments.push_back( AlignFile );
-    OutputTraces.push_back( TraceBaseName + TRANSLATED_TRACE_SUFFIX );
+    OutputTraces.push_back( TraceBaseName + SUFFIX_TRACKED_TRACE );
   }
-  OutputSequenceFile = OutputPrefix + ".SEQUENCES";
+  OutputSequenceFile = OutputPrefix + SUFFIX_SEQUENCES;
 
+  /* Write the configuration file for the GUI */
+  string GUIConfigFile = OutputPrefix + SUFFIX_GUI_CONFIG;
+  ofstream fd(GUIConfigFile.c_str());
+  fd << "[Info]" << endl;
+  fd << "Frames=" << NumberOfTraces << endl << endl;
+  for (int i=0; i<NumberOfTraces; i++)
+  {
+    fd << "[Frame " << i+1 << "]" << endl;
+    fd << "iTrace=" << InputTraces[i] << endl;
+    fd << "oTrace=" << OutputTraces[i] << endl;
+    fd << "Orig=" << OrigCSVs[i] << endl;
+    fd << "Data=" << OrigCSVs[i]+SUFFIX_RECOLORED_CSV << endl;
+    if (UseCallers)
+    {
+      fd << "Callers=" << OutputHistoCallers[i] << endl;
+    }
+    fd << endl;
+  }
+  fd.close();
 }
 
 
@@ -87,7 +148,7 @@ void Tracking::CorrelateTraces()
 {
   vector<Histo3D *>         H3Ds;
   vector<SequenceTracker *> STs;
-  vector<ClusterCorrelationMatrix *> BySimultaneity;
+  vector<CorrelationMatrix *> BySimultaneity;
 
   for (int i=0; i<NumberOfTraces; i++)
   {
@@ -95,14 +156,14 @@ void Tracking::CorrelateTraces()
     {
       cout << "+ Computing histogram of callers per cluster for trace " << i+1 << "..." << endl;
       CallersTracker CT = CallersTracker();
-      H3Ds.push_back( CT.Compute3D(InputTraces[i], CallersCFG) ) ;
+      H3Ds.push_back( CT.Compute3D(InputTraces[i], CallersCFG, OutputHistoCallers[i]) ) ;
       if (H3Ds[i]->size() <= 0)
       {
         cout << "WARNING: Histogram is empty. Callers will not be used for trace " << i+1 << ". Try increasing the callers level!" << endl;
       }
       cout << endl;
     }
-    if (UseSequence)
+    if (UseAlignment)
     { 
       cout << endl << "+ Computing sequence alignment for trace " << i+1 << "..." << endl << endl;
       STs.push_back( new SequenceTracker(InputAlignments[i], InputCINFOs[i]) );
@@ -162,18 +223,18 @@ void Tracking::CorrelateTraces()
       }
     }
 
-    vector<OneWayCorrelation *> Forward, Backward;
+    vector<Link *> Forward, Backward;
     Mix(trace1, trace2, STs, BySimultaneity, Forward);
     Mix(trace2, trace1, STs, BySimultaneity, Backward);
 
-    TracesCorrelationMatrix[trace1][trace2].PairedByMixer = new TwoWayCorrelation(Forward, Backward);
+    TracesCorrelationMatrix[trace1][trace2].PairedByMixer = new DoubleLink(Forward, Backward);
     if (Verbose)
     {
       cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << ":" << endl << endl;
       TracesCorrelationMatrix[trace1][trace2].PairedByMixer->print();
     }
 
-    if ((UseSequence) && (STs[trace1]->isAvailable()) && (STs[trace2]->isAvailable()))
+    if ((UseAlignment) && (STs[trace1]->isAvailable()) && (STs[trace2]->isAvailable()))
     {
       double Score1 = STs[trace1]->getGlobalScore();
       double Score2 = STs[trace2]->getGlobalScore();
@@ -190,15 +251,15 @@ void Tracking::CorrelateTraces()
         TracesCorrelationMatrix[trace1][trace2].PairedByMixer->GetUnique(UniqueCorrelations);
         if (Verbose)
         {
-          cout << "(" << UniqueCorrelations.size() << " univocal correlations)" << endl;
+          cout << "(" << UniqueCorrelations.size() << " univocal correlations)" << endl << endl;
         }
         if (UniqueCorrelations.size() > 0)
         {
           TracesCorrelationMatrix[trace1][trace2].PairedBySequence = STs[trace1]->PairWithAnother(
              UniqueCorrelations, 
              STs[trace2], 
-             InputLastClusters[trace1], 
-             InputLastClusters[trace2]);
+             NumClustersToTrack[trace1], 
+             NumClustersToTrack[trace2]);
 
 //          TracesCorrelationMatrix[trace1][trace2].PairedBySequence->Combine();
 
@@ -206,8 +267,9 @@ void Tracking::CorrelateTraces()
           {
             if (Verbose)
             {
-              cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << " (AS REPORTED BY SEQUENCE TRACKER):" << endl << endl;
+              cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << " (REPORTED BY SEQUENCE TRACKER):" << endl << endl;
               TracesCorrelationMatrix[trace1][trace2].PairedBySequence->print();
+              cout << endl;
             }
           
             cout << endl << "+ Combining heuristic and sequence correlations:" << endl << endl;
@@ -227,7 +289,7 @@ void Tracking::CorrelateTraces()
  
   BuildFinalSequence();
 
-  GeneratePlots();
+  // GeneratePlots();
 
   Recolor();
 
@@ -247,7 +309,7 @@ void Tracking::BuildFinalSequence()
   ofstream fd;
   fd.open (OutputSequenceFile.c_str(), ios::out | ios::trunc);
 
-  vector<TwoWayCorrelation *> AllPairs;
+  vector<DoubleLink *> AllPairs;
 
   for (int trace1=0; trace1<NumberOfTraces-1; trace1++)
   {
@@ -255,25 +317,25 @@ void Tracking::BuildFinalSequence()
     AllPairs.push_back ( TracesCorrelationMatrix[trace1][trace2].PairedCombo );
   }
 
-  FinalSequence = new NWayCorrelation(AllPairs);
+  FinalSequence = new SequenceLink(AllPairs);
 
   FinalSequence->write(fd);
 
   fd.close();
 }
 
-ClusterCorrelationMatrix * Tracking::TrackByCrossClassify(int trace1, int trace2)
+CorrelationMatrix * Tracking::TrackByCrossClassify(int trace1, int trace2)
 {
   stringstream ssCrossClassifyOutput;
   ssCrossClassifyOutput << "cross-classify-" << trace1 << "-" << trace2 << ".csv";
   
   CrossClassifier CC = CrossClassifier(InputCSVs[trace1], InputCSVs[trace2], ssCrossClassifyOutput.str(), 1.0);
 
-  ClusterCorrelationMatrix *CCM = CC.CrossClassify();
+  CorrelationMatrix *CCM = CC.CrossClassify();
   return CCM;
 }
 
-ClusterCorrelationMatrix * Tracking::TrackByCallers(int trace1, int trace2, vector<Histo3D *> &H3Ds)
+CorrelationMatrix * Tracking::TrackByCallers(int trace1, int trace2, vector<Histo3D *> &H3Ds)
 {
   CallersTracker CC = CallersTracker();
   Histo3D *H1, *H2;
@@ -281,19 +343,19 @@ ClusterCorrelationMatrix * Tracking::TrackByCallers(int trace1, int trace2, vect
   H1 = H3Ds[trace1];
   H2 = H3Ds[trace2];
 
-  ClusterCorrelationMatrix *CCM = CC.CrossCallers(H1, H2);
+  CorrelationMatrix *CCM = CC.CrossCallers(H1, H2);
 
   return CCM;
 }
 
-void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vector<ClusterCorrelationMatrix *> &BySimultaneity, vector <OneWayCorrelation *> &ResultingMatch)
+void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vector<CorrelationMatrix *> &BySimultaneity, vector <Link *> &ResultingMatch)
 {
-  ClusterCorrelationMatrix *ByCrossClassify = TracesCorrelationMatrix[trace1][trace2].ByCross;
-  ClusterCorrelationMatrix *ByCallers       = TracesCorrelationMatrix[trace1][trace2].ByCallers;
+  CorrelationMatrix *ByCrossClassify = TracesCorrelationMatrix[trace1][trace2].ByCross;
+  CorrelationMatrix *ByCallers       = TracesCorrelationMatrix[trace1][trace2].ByCallers;
 
   bool CrossApplicable    = ((UseCrossClassify) && (ByCrossClassify != NULL));
   bool CallersApplicable  = ((UseCallers) && (ByCallers != NULL));
-  bool SequenceApplicable = ((UseSequence) && (STs[trace2]->isAvailable()) && (BySimultaneity[trace2] != NULL));
+  bool SequenceApplicable = ((UseAlignment) && (STs[trace2]->isAvailable()) && (BySimultaneity[trace2] != NULL));
 
   ResultingMatch.clear();
 
@@ -317,17 +379,17 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
   }
 
   //int ClustersPerTrace = ByCrossClassify->getNumberOfClusters(); /* Process all clusters for this trace */ 
-  int ClustersPerTrace = InputLastClusters[trace1];
+  int ClustersPerTrace = NumClustersToTrack[trace1];
 
   for (CID CurrentClusterID = 1; CurrentClusterID <= ClustersPerTrace; CurrentClusterID ++)
   {
-    OneWayCorrelation *CombinedCorrelation = new OneWayCorrelation(CurrentClusterID);
-    OneWayCorrelation *ClassifyCorrelation = NULL;
+    Link *CombinedCorrelation = new Link(CurrentClusterID);
+    Link *ClassifyCorrelation = NULL;
 
     /* Get initial correlations from classification */
     if (UseCrossClassify)
     {
-      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 10);
+      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 0);
       CombinedCorrelation->join(ClassifyCorrelation);
     }
 
@@ -343,12 +405,12 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
       }
       else
       {
-        TClusterGroup::iterator it;
+        TClustersSet::iterator it;
         {
           for (it = ClassifyCorrelation->begin(); it != ClassifyCorrelation->end(); it++)
           {
             /* Union all the possible simultaneous clusters */
-            OneWayCorrelation *Simultaneous = BySimultaneity[trace2]->getCorrelation(*it, 5);
+            Link *Simultaneous = BySimultaneity[trace2]->getCorrelation(*it, 15);
             CombinedCorrelation->join(Simultaneous);
           }
         }
@@ -358,15 +420,18 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
     /* Intersect with callers information */
     if ((UseCallers) && (ByCallers != NULL))
     {
-      OneWayCorrelation *CallersCorrelation = ByCallers->getCorrelation(CurrentClusterID, 0);
-      CombinedCorrelation->intersect(CallersCorrelation);
-    
-      /* If the heuristics are contradictory, or callers are unique, follow callers */
-      if ((CombinedCorrelation->size() == 0) || (CallersCorrelation->size() == 1))
+      Link *CallersCorrelation = ByCallers->getCorrelation(CurrentClusterID, 0);
+      if (CallersCorrelation->size() > 0)
       {
-        CombinedCorrelation = CallersCorrelation;
-//        CombinedCorrelation = ByCallers->getCorrelation(CurrentClusterID, -1);
-      } 
+        CombinedCorrelation->intersect(CallersCorrelation);
+    
+        /* If the heuristics are contradictory, or callers are unique (and not empty), follow callers */
+        if ((CombinedCorrelation->size() == 0) || (CallersCorrelation->size() == 1))
+        {
+          CombinedCorrelation = CallersCorrelation;
+          //CombinedCorrelation = ByCallers->getCorrelation(CurrentClusterID, -1);
+        } 
+      }
     }
 
     ResultingMatch.push_back( CombinedCorrelation );
@@ -383,23 +448,21 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
   }
 }
  
-void Tracking::GeneratePlots()
-{
-  cout << "+ Generating plots...\n";
-  cout.flush();
-
-  string CMD = "perl -I " + string(getenv("TRACKING_HOME")) + "/bin " + string(getenv("TRACKING_HOME")) + "/bin/GeneratePlots.pl ";
-  for (int i=0; i<InputTraces.size(); i++)
-  {
-    string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
-    CMD += TraceBaseName + " ";
-  }
-  CMD += OutputPrefix;
-
-  cout << CMD << endl;
-  system(CMD.c_str());
-  cout << "Plotting done!" << endl << endl;
-}
+// void Tracking::GeneratePlots()
+// {
+//   cout << "+ Generating plots...\n";
+//   cout.flush();
+//   string CMD = "perl -I " + string(getenv("TRACKING_HOME")) + "/bin " + string(getenv("TRACKING_HOME")) + "/bin/generate-plots.pl ";
+//   for (int i=0; i<InputTraces.size(); i++)
+//   {
+//     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
+//     CMD += TraceBaseName + " ";
+//   }
+//   CMD += OutputPrefix;
+//   cout << CMD << endl;
+//   system(CMD.c_str());
+//   cout << "Plotting done!" << endl << endl;
+// }
 
 void Tracking::Recolor()
 {
@@ -409,11 +472,11 @@ void Tracking::Recolor()
   for (int i=0; i<InputTraces.size(); i++)
   {
     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
-    string ScaledPlot = TraceBaseName + "*" + SCALED_PLOT_SUFFIX;
+    string ScaledPlot = TraceBaseName + "*" + SUFFIX_SCALED_PLOT;
 
     InPlots.push_back ( ScaledPlot );
   }
-  string CMD = string(getenv("TRACKING_HOME")) + "/bin/Recoloring.pl ";
+  string CMD = string(getenv("TRACKING_HOME")) + "/bin/recoloring.pl ";
   for (int i=0; i<InPlots.size(); i++)
   {
     CMD += InPlots[i] + " ";
@@ -433,7 +496,7 @@ void Tracking::ReconstructTraces()
   {
     map<TTypeValuePair, TTypeValuePair> CurrentTraceTranslationTable;
 
-    FinalSequence->GetTranslationTable(i, CurrentTraceTranslationTable);
+    FinalSequence->GetTranslationTable(i, TotalClusters[i], CurrentTraceTranslationTable);
     AllTranslationTables.push_back( CurrentTraceTranslationTable );
   }
 

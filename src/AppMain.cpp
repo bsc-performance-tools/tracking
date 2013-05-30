@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <string>
 using std::string;
 #include <vector>
@@ -6,9 +9,10 @@ using std::vector;
 using std::cout;
 using std::cerr;
 using std::endl;
+#include <sstream>
+using std::istringstream;
+#include "ClusterIDs.h"
 #include "Tracking.h"
-
-#define DEFAULT_MIN_SCORE 0.80
 
 string CallersCFG     = "";
 bool   CallersCFGRead = false;
@@ -19,9 +23,8 @@ double MinimumScore   = DEFAULT_MIN_SCORE;
 
 void PrintUsage(char* ApplicationName)
 {
-  cout << "Usage: " << ApplicationName << " ";
-  cout << "[-c callers.cfg] [-o output_prefix] [-v] ";
-  cout << "<trace1.prv>:<max_clusters> ... <traceN.prv>:<max_clusters>" << endl;
+  fprintf(stdout, HELP, ApplicationName);
+  fflush(stdout);
 }
 
 int ReadArgs(int argc, char *argv[])
@@ -44,25 +47,25 @@ int ReadArgs(int argc, char *argv[])
 
       switch (argv[j][1])
       {
+        case 'a':
+          j++;
+          MinimumScore = atof(argv[j]);
+          break;
         case 'c':
           j++;
           CallersCFG = argv[j];
           CallersCFGRead = true;
           break;
-        case 'r':
-          Reconstruct = true;
-          break;
-        case 's':
-          j++;
-          MinimumScore = atof(argv[j]);
-          break;
-        case 'v':
-          Verbose = true;
-          break;
         case 'o':
           j++;
           OutputPrefix = argv[j];
           OutputPrefix += ".";
+          break;
+        case 'r':
+          Reconstruct = true;
+          break;
+        case 'v':
+          Verbose = true;
           break;
         default:
           cerr << "*** INVALID PARAMETER " << argv[j][1] << " *** " << endl << endl;
@@ -80,7 +83,8 @@ int ReadArgs(int argc, char *argv[])
 int main(int argc, char **argv)
 {
   vector<string> TracesArray;
-  vector<CID> LastClustersArray;
+  vector<CID>    NumClustersToTrack;
+
   int FirstTraceArg = ReadArgs(argc, argv);
 
   for (int i=FirstTraceArg; i<argc; i++)
@@ -102,10 +106,10 @@ int main(int argc, char **argv)
     }
 
     TracesArray.push_back(CurrentTrace);
-    LastClustersArray.push_back(LastClusterForTrace);
+    NumClustersToTrack.push_back(LastClusterForTrace);
   }
 
-  Tracking *ClustersTracking = new Tracking(TracesArray, LastClustersArray, CallersCFG, MinimumScore, OutputPrefix, Reconstruct, Verbose);
+  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, CallersCFG, MinimumScore, OutputPrefix, Reconstruct, Verbose);
 
   ClustersTracking->CorrelateTraces();
   delete ClustersTracking;

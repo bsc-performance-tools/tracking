@@ -4,12 +4,13 @@
 #include <set>
 using std::set;
 
-#define NOISE         4
-#define FIRST_CLUSTER 5
+#define NOISE         5
+#define FIRST_CLUSTER 6
 
 #define CLUSTER_ID(id) (id - NOISE)
 
 typedef int CID;
-typedef set<CID> TClusterGroup;
+typedef int Cluster;
+typedef set<Cluster> TClustersSet;
 
 #endif /* __CLUSTER_IDS_H__ */

@@ -1,0 +1,3 @@
+BASE_DIR         = $(top_srcdir)
+ANN_DIR          = $(BASE_DIR)/lib/ANNClassify
+SCORE_DIR        = $(BASE_DIR)/lib/SequenceScore

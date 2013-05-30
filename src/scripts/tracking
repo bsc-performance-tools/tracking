@@ -1,11 +1,10 @@
 #!/bin/bash
 
+ulimit -c 12000000
+
 export TRACKING_HOME=@sub_TRACKING_PREFIX@
-export PARAVER_KERNEL_HOME=@sub_PARAVER_HOME@
-export CLUSTERING_HOME=@sub_CLUSTERING_HOME@
-export ANN_HOME=@sub_ANN_HOME@
 
-export LD_LIBRARY_PATH=@sub_BOOST_LDPATH@:$PARAVER_KERNEL_HOME/lib/paraver-kernel:$CLUSTERING_HOME/lib:$ANN_HOME/lib
+export LD_LIBRARY_PATH=@sub_BOOST_LDPATH@:$LD_LIBRARY_PATH
 
-$TRACKING_HOME/bin/tracking-preprocess $*
+perl $TRACKING_HOME/bin/tracking.pl $*
 

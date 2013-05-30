@@ -4,6 +4,7 @@ using std::cerr;
 using std::endl;
 #include <fstream>
 using std::ofstream;
+#include <stdlib.h>
 #include "ClassifyTool.h"
 
 /**

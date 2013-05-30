@@ -2,12 +2,12 @@
 # -------------
 AC_DEFUN([AX_FLAGS_SAVE],
 [
-   saved_LIBS="${LIBS}"
-   saved_CC="${CC}"
-   saved_CFLAGS="${CFLAGS}"
-   saved_CXXFLAGS="${CXXFLAGS}"
-   saved_CPPFLAGS="${CPPFLAGS}"
-   saved_LDFLAGS="${LDFLAGS}"
+  saved_LIBS="${LIBS}"
+  saved_CC="${CC}"
+  saved_CFLAGS="${CFLAGS}"
+  saved_CXXFLAGS="${CXXFLAGS}"
+  saved_CPPFLAGS="${CPPFLAGS}"
+  saved_LDFLAGS="${LDFLAGS}"
 ])
 
 
@@ -15,12 +15,12 @@ AC_DEFUN([AX_FLAGS_SAVE],
 # ----------------
 AC_DEFUN([AX_FLAGS_RESTORE],
 [
-   LIBS="${saved_LIBS}"
-   CC="${saved_CC}"
-   CFLAGS="${saved_CFLAGS}"
-   CXXFLAGS="${saved_CXXFLAGS}"
-   CPPFLAGS="${saved_CPPFLAGS}"
-   LDFLAGS="${saved_LDFLAGS}"
+  LIBS="${saved_LIBS}"
+  CC="${saved_CC}"
+  CFLAGS="${saved_CFLAGS}"
+  CXXFLAGS="${saved_CXXFLAGS}"
+  CPPFLAGS="${saved_CPPFLAGS}"
+  LDFLAGS="${saved_LDFLAGS}"
 ])
 
 
@@ -28,112 +28,111 @@ AC_DEFUN([AX_FLAGS_RESTORE],
 # --------------------
 AC_DEFUN([AX_FIND_INSTALLATION],
 [
-	AC_REQUIRE([AX_SELECT_BINARY_TYPE])
+  AC_REQUIRE([AX_SELECT_BINARY_TYPE])
 
-	dnl Search for home directory
-	AC_MSG_CHECKING([for $1 installation])
-    for home_dir in [$2 "not found"]; do
-        if test -d "$home_dir/$BITS" ; then
-            home_dir="$home_dir/$BITS"
-            break
-        elif test -d "$home_dir" ; then
-            break
+  dnl Search for home directory
+  AC_MSG_CHECKING([for $1 installation])
+  for home_dir in [$2 "not found"]; do
+    if test -d "$home_dir/$BITS" ; then
+      home_dir="$home_dir/$BITS"
+      break
+    elif test -d "$home_dir" ; then
+      break
+    fi
+  done
+  AC_MSG_RESULT([$home_dir])
+  $1_HOME="$home_dir"
+  if test "$$1_HOME" = "not found" ; then
+    $1_HOME=""
+  else
+    dnl Did the user passed a headers directory to check first?
+    AC_ARG_WITH([$3-headers],
+      AC_HELP_STRING(
+        [--with-$3-headers@<:@=ARG@:>@],
+        [Specify location of include files for package $3]
+      ),
+      [ForcedHeaders="$withval"],
+      [ForcedHeaders=""]
+    )
+
+    dnl Search for includes directory
+    AC_MSG_CHECKING([for $1 includes directory])
+
+    if test "${ForcedHeaders}" = "" ; then
+      for incs_dir in [$$1_HOME/include$BITS $$1_HOME/include "not found"] ; do
+        if test -d "$incs_dir" ; then
+          break
         fi
-    done
-	AC_MSG_RESULT([$home_dir])
-	$1_HOME="$home_dir"
-	if test "$$1_HOME" = "not found" ; then
-		$1_HOME=""
-	else
+      done
+    else
+      for incs_dir in [${ForcedHeaders} "not found"] ; do
+        if test -d "$incs_dir" ; then
+          break
+        fi
+      done
+    fi
 
-		dnl Did the user passed a headers directory to check first?
-		AC_ARG_WITH([$3-headers],
-			AC_HELP_STRING(
-				[--with-$3-headers@<:@=ARG@:>@],
-				[Specify location of include files for package $3]
-			),
-			[ForcedHeaders="$withval"],
-			[ForcedHeaders=""]
-		)
+    AC_MSG_RESULT([$incs_dir])
+    $1_INCLUDES="$incs_dir"
+    if test "$$1_INCLUDES" = "not found" ; then
+      AC_MSG_ERROR([Unable to find header directory for package $3. Check option --with-$3-headers.])
+    else
+      $1_CFLAGS="-I$$1_INCLUDES"
+      $1_CXXFLAGS="-I$$1_INCLUDES"
+      $1_CPPFLAGS="-I$$1_INCLUDES"
+    fi
 
-		dnl Search for includes directory
-		AC_MSG_CHECKING([for $1 includes directory])
+    dnl Did the user passed a headers directory to check first?
+    AC_ARG_WITH([$3-libs],
+      AC_HELP_STRING(
+        [--with-$3-libs@<:@=ARG@:>@],
+        [Specify location of library files for package $3]
+      ),
+      [ForcedLibs="$withval"],
+      [ForcedLibs=""]
+    )
 
-		if test "${ForcedHeaders}" = "" ; then
-			for incs_dir in [$$1_HOME/include$BITS $$1_HOME/include "not found"] ; do
-				if test -d "$incs_dir" ; then
-					break
-				fi
-			done
-		else
-			for incs_dir in [${ForcedHeaders} "not found"] ; do
-				if test -d "$incs_dir" ; then
-					break
-				fi
-			done
-		fi
+    dnl Search for libs directory
+    AC_MSG_CHECKING([for $1 libraries directory])
+    if test "${ForcedLibs}" = "" ; then
+      for libs_dir in [$$1_HOME/lib$BITS $$1_HOME/lib "not found"] ; do
+        if test -d "$libs_dir" ; then
+          break
+        fi
+      done
+    else
+      for libs_dir in [${ForcedLibs} "not found"] ; do
+        if test -d "$libs_dir" ; then
+          break
+        fi
+      done
+    fi
 
-		AC_MSG_RESULT([$incs_dir])
-		$1_INCLUDES="$incs_dir"
-		if test "$$1_INCLUDES" = "not found" ; then
-			AC_MSG_ERROR([Unable to find header directory for package $3. Check option --with-$3-headers.])
-		else
-			$1_CFLAGS="-I$$1_INCLUDES"
-			$1_CXXFLAGS="-I$$1_INCLUDES"
-			$1_CPPFLAGS="-I$$1_INCLUDES"
-		fi
+    AC_MSG_RESULT([$libs_dir])
+    $1_LIBSDIR="$libs_dir"
+    if test "$$1_LIBSDIR" = "not found" ; then
+      AC_MSG_ERROR([Unable to find library directory for package $3. Check option --with-$3-libs.])
+    else
+      $1_LDFLAGS="-L$$1_LIBSDIR"
+      if test -d "$$1_LIBSDIR/shared" ; then
+        $1_SHAREDLIBSDIR="$$1_LIBSDIR/shared"
+      else
+        $1_SHAREDLIBSDIR=$$1_LIBSDIR
+      fi
+    fi
+  fi
 
-		dnl Did the user passed a headers directory to check first?
-		AC_ARG_WITH([$3-libs],
-			AC_HELP_STRING(
-				[--with-$3-libs@<:@=ARG@:>@],
-				[Specify location of library files for package $3]
-			),
-			[ForcedLibs="$withval"],
-			[ForcedLibs=""]
-		)
+  dnl Everything went OK?
+  if test "$$1_HOME" != "" -a "$$1_INCLUDES" != "" -a "$$1_LIBSDIR" != "" ; then
+    $1_INSTALLED="yes"
 
-		dnl Search for libs directory
-		AC_MSG_CHECKING([for $1 libraries directory])
-		if test "${ForcedLibs}" = "" ; then
-			for libs_dir in [$$1_HOME/lib$BITS $$1_HOME/lib "not found"] ; do
-				if test -d "$libs_dir" ; then
-					break
-				fi
-			done
-		else
-			for libs_dir in [${ForcedLibs} "not found"] ; do
-				if test -d "$libs_dir" ; then
-					break
-				fi
-			done
-		fi
-
-		AC_MSG_RESULT([$libs_dir])
-		$1_LIBSDIR="$libs_dir"
-		if test "$$1_LIBSDIR" = "not found" ; then
-			AC_MSG_ERROR([Unable to find library directory for package $3. Check option --with-$3-libs.])
-		else
-       $1_LDFLAGS="-L$$1_LIBSDIR"
-       if test -d "$$1_LIBSDIR/shared" ; then
-          $1_SHAREDLIBSDIR="$$1_LIBSDIR/shared"
-       else
-          $1_SHAREDLIBSDIR=$$1_LIBSDIR
-       fi
-		fi
-	fi
-
-	dnl Everything went OK?
-	if test "$$1_HOME" != "" -a "$$1_INCLUDES" != "" -a "$$1_LIBSDIR" != "" ; then
-		$1_INSTALLED="yes"
-
-		AC_SUBST($1_HOME)
-		AC_SUBST($1_INCLUDES)
+    AC_SUBST($1_HOME)
+    AC_SUBST($1_INCLUDES)
 
     AC_SUBST($1_CFLAGS)
     AC_SUBST($1_CXXFLAGS)
     AC_SUBST($1_CPPFLAGS)
-
+  
     AC_SUBST($1_LDFLAGS)
     AC_SUBST($1_SHAREDLIBSDIR)
     AC_SUBST($1_LIBSDIR)
@@ -143,9 +142,9 @@ AC_DEFUN([AX_FIND_INSTALLATION],
     CXXFLAGS="$CXXFLAGS $$1_CXXFLAGS"
     CPPFLAGS="$CPPFLAGS $$1_CPPFLAGS"
     LDFLAGS="$LDFLAGS $$1_LDFLAGS"
-	else	
-		$1_INSTALLED="no"
-	fi
+  else
+    $1_INSTALLED="no"
+  fi
 ])
 
 
@@ -153,16 +152,16 @@ AC_DEFUN([AX_FIND_INSTALLATION],
 # ---------------------
 AC_DEFUN([AX_CHECK_POINTER_SIZE],
 [
-   AC_TRY_RUN(
-      [
-         int main()
-         {
-            return sizeof(void *)*8;
-         }
-      ],
-      [ POINTER_SIZE="0" ],
-      [ POINTER_SIZE="$?"]
-   )
+  AC_TRY_RUN(
+    [
+      int main()
+      {
+        return sizeof(void *)*8;
+      }
+    ],
+    [ POINTER_SIZE="0" ],
+    [ POINTER_SIZE="$?"]
+  )
 ])
 
 
@@ -272,6 +271,23 @@ AC_DEFUN([AX_CHECK_ENDIANNESS],
    fi
 ])
 
+# AX_PROG_CLUSTERING
+# ------------------
+# Looks for an installation of the Clustering Suite
+AC_DEFUN([AX_PROG_CLUSTERING],
+[
+  dnl Check for clustering and spectral support
+  AC_ARG_WITH(clustering,
+    AC_HELP_STRING(
+      [--with-clustering@<:@=DIR@:>@],
+      [specify where to find clustering libraries and includes]
+    ),
+    [clustering_paths="$withval"],
+    [clustering_paths="/home/bsc41/bsc41127/apps/CLUSTERING/burst-clusterizer-stable"] dnl List of possible default paths
+  )
+  AX_FIND_INSTALLATION([CLUSTERING], [$clustering_paths], [clustering])
+])
+
 # AX_PROG_PARAVER
 # ---------------
 # Looks for an installation of wxParaver
@@ -292,49 +308,12 @@ AC_DEFUN([AX_PROG_PARAVER],
   AX_FIND_INSTALLATION([PARAVER], [$paraver_paths], [paraver])
   if test "$PARAVER_INSTALLED" = "yes" ; then
     PARAVER_KERNEL_INCLUDES="-I${PARAVER_INCLUDES} -I${PARAVER_HOME}/../common-files ${BOOST_CPPFLAGS}"
-    PARAVER_KERNEL_LDFLAGS="-L${PARAVER_LIBSDIR}/paraver-kernel -L${BOOST_LDPATH}"
-    PARAVER_KERNEL_LIBS="-lparaver-kernel -lparaver-api -lboost_serialization"
+    PARAVER_KERNEL_LDFLAGS="-L${PARAVER_LIBSDIR}/paraver-kernel -L${PARAVER_LIBSDIR}/ptools_common_files -L${PARAVER_LIBSDIR}/wxparaver -L${BOOST_LDPATH}"
+    PARAVER_KERNEL_LIBS="-lparaver-kernel -lparaver-api -lptools_common_files -lboost_serialization"
     AC_SUBST(PARAVER_KERNEL_INCLUDES)
     AC_SUBST(PARAVER_KERNEL_LDFLAGS)
     AC_SUBST(PARAVER_KERNEL_LIBS)
   fi
-])
-
-# AX_PROG_CLUSTERING
-# ------------------
-# Looks for an installation of burst-clusterizer
-AC_DEFUN([AX_PROG_CLUSTERING],
-[
-  dnl Check for clustering and spectral support
-  AC_ARG_WITH(clustering,
-    AC_HELP_STRING(
-      [--with-clustering@<:@=DIR@:>@],
-      [specify where to find clustering libraries and includes]
-    ),
-    [clustering_paths="$withval"],
-    [clustering_paths="/home/bsc41/bsc41127/apps/CLUSTERING/burst-clusterizer-stable"] dnl List of possible default paths
-  )
-  dnl Search for burst-clusterizer installation
-  AX_FIND_INSTALLATION([CLUSTERING], [$clustering_paths], [clustering])
-  if test "${CLUSTERING_INSTALLED}" = "yes" ; then
-    SEQUENCE_LIBS="-lSequenceScore"
-    AC_SUBST(SEQUENCE_LIBS)
-  fi
-
-  AC_ARG_WITH(ann-classify,
-    AC_HELP_STRING(
-      [--with-ann-classify@<:@=DIR@:>@],
-      [specify where to find ANN libraries and includes]
-    ),
-    [ann_classify_paths="$withval"],
-    [ann_classify_paths="/home/bsc41/bsc41127/apps/CLUSTERING/libANNClassify"] dnl List of possible default paths
-  )
-  dnl Search for libANN installation
-  AX_FIND_INSTALLATION([ANN], [$ann_classify_paths], [ann-classify])
-  if test "${ANN_INSTALLED}" = "yes" ; then
-    ANN_LIBS="-lANNClassify"
-    AC_SUBST(ANN_LIBS)
-    AC_DEFINE([HAVE_ANN_CLASSIFY], 1, [Define to 1 if libANNClassify is installed in the system])
-  fi
+  AM_CONDITIONAL(HAVE_PARAVER, test "$PARAVER_INSTALLED" = "yes")
 ])
 

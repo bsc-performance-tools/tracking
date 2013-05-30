@@ -7,6 +7,8 @@ using std::string;
 using std::vector;
 #include "ClusterIDs.h"
 
+#define FIRST_DIMENSION 8 /* Instance, TaskId, ThreadId, Begin_Time, End_Time, Duration, Line, FIRST_DIMENSION */
+
 /**
  * This object represents in memory the information comprised in a "clustered.csv" file.
  */

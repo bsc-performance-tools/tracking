@@ -15,7 +15,7 @@ using std::map;
 #include "window.h"
 #include "histogram.h"
 #include "paraverkernelexception.h"
-#include "ClusterCorrelationMatrix.h"
+#include "CorrelationMatrix.h"
 #include "ClusterIDs.h"
 
 typedef struct
@@ -36,7 +36,8 @@ public:
   void getClusters(vector<CID> &clusters);
   void getCallersForCluster(CID cluster, vector<TCaller> &callers);
   void getClustersWithCaller(string caller_name, vector<CID> &clusters);
-
+  bool getClusterCallerStats(CID cluster_id, string caller_name, TCaller &caller_stats);
+  bool hasCallers(CID cluster_id);
 private:
   map< CID, vector<TCaller> > H;
 };
@@ -45,8 +46,8 @@ class CallersTracker
 {
 public:
   CallersTracker();
-  Histo3D * Compute3D(string strTrace, string strCFG);
-  ClusterCorrelationMatrix * CrossCallers(Histo3D *H1, Histo3D *H2);
+  Histo3D * Compute3D(string strTrace, string strCFG, string SavedHistogramFileName);
+  CorrelationMatrix * CrossCallers(Histo3D *H1, Histo3D *H2);
 
 private:
   KernelConnection *myKernel;

@@ -3,6 +3,8 @@ using std::cout;
 using std::cerr;
 using std::endl;
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "ClusteringState.h"
 
 /**
@@ -65,6 +67,7 @@ ClusteringState::ClusteringState(
   }
 }
 
+
 /**
  * Constructor from file. The new object represents the information 
  * comprised in the specified "clustered.csv" file that is loaded and parsed.
@@ -85,7 +88,7 @@ ClusteringState::ClusteringState(const char *file, double eps)
   MinimumDimensions.clear();
   MaximumDimensions.clear();
 
-  if ((fp = fopen(file, "r")) == NULL) 
+  if ((fp = fopen(file, "r")) == NULL)
   {
     cerr << "ClusteringState::ClusteringState: Error opening file '" << file << "'" << endl;
     return;

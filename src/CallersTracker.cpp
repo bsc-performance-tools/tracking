@@ -4,7 +4,11 @@ using std::cerr;
 using std::endl;
 #include <fstream>
 using std::ofstream;
+using std::ifstream;
 #include <string>
+#include <sstream>
+using std::stringstream;
+using std::istringstream;
 #include <stdlib.h>
 #include <libgen.h>
 #include "CallersTracker.h"
@@ -19,14 +23,10 @@ CallersTracker::CallersTracker()
   myConfig->readParaverConfigFile();
 }
 
-Histo3D * CallersTracker::Compute3D(string strTrace, string strCFG)
+Histo3D * CallersTracker::Compute3D(string strTrace, string strCFG, string SavedHistogramFileName)
 {
   Trace   *trace    = NULL;
   Histo3D *trace3DH = new Histo3D();
-
-  string CFGBaseName = RemoveExtension(strCFG);
-  string Suffix = CFGBaseName + ".3D";
-  string SavedHistogramFileName = strTrace + "." + Suffix;
 
   if (trace3DH->load(SavedHistogramFileName))
   {
@@ -91,6 +91,7 @@ bool CallersTracker::loadTrace( KernelConnection *myKernel, string strTrace, Tra
 }
 
 
+#define  FIRST_VALID_CALLER 3
 void CallersTracker::parseHistogram(Histogram * histo, Histo3D *&H)
 {
   /* Configure the histogram */
@@ -98,7 +99,14 @@ void CallersTracker::parseHistogram(Histogram * histo, Histo3D *&H)
   histo->getControlWindow()->getSelectedRows(histo->getControlWindow()->getLevel(), selectedRows);
   histo->setCompute2DScale(false);
   histo->compute2DScale();
-  histo->setControlMin(3);
+  if (histo->getControlMax() < FIRST_VALID_CALLER)
+  {
+    /* There are no events with value above 2, this means all callers are Unresolved or Not found! */
+    cout << "WARNING: Callers are unresolved!" << endl;
+    cout.flush();
+    return;
+  }
+  histo->setControlMin(FIRST_VALID_CALLER);
   histo->execute( histo->getBeginTime(), histo->getEndTime(), selectedRows );
 
   /* Select the histogram metric */
@@ -157,17 +165,19 @@ void CallersTracker::parseHistogram(Histogram * histo, Histo3D *&H)
   }
 }
 
-ClusterCorrelationMatrix * CallersTracker::CrossCallers(Histo3D *H1, Histo3D *H2)
+CorrelationMatrix * CallersTracker::CrossCallers(Histo3D *H1, Histo3D *H2)
 {
-  ClusterCorrelationMatrix * CCM = new ClusterCorrelationMatrix(H1->size(), H2->size());
-
-  for (int CurrentCluster = 1; CurrentCluster <= H1->size(); CurrentCluster++)
+  CorrelationMatrix * CCM = new CorrelationMatrix(H1->size(), H2->size());
+  
+  for (int CurrentCluster = 1; CurrentCluster <= H1->size(); CurrentCluster++) 
   {
+    if (!H1->hasCallers(CurrentCluster)) continue;
+
     vector<TCaller> ClusterCallers;
 
     H1->getCallersForCluster(CurrentCluster, ClusterCallers);
 
-    /* DEBUG
+    /* DEBUG 
     cout << "[DEBUG] CallersTracker::CrossCallers " << CurrentCluster << " --> "; */
 
     for (int i=0; i<ClusterCallers.size(); i++)
@@ -177,18 +187,29 @@ ClusterCorrelationMatrix * CallersTracker::CrossCallers(Histo3D *H1, Histo3D *H2
 
       H2->getClustersWithCaller(CurrentCaller.CallerName, CorrespondingClusters);
 
-      for (int j=0; j<CorrespondingClusters.size(); j++)
+      if (CorrespondingClusters.size() > 0)
       {
-        /* DEBUG
-        cout << CorrespondingClusters[j] << " "; */
+        for (int j=0; j<CorrespondingClusters.size(); j++)
+        {
+          TCaller CorrespondingCaller;
+          H2->getClusterCallerStats(CorrespondingClusters[j], CurrentCaller.CallerName, CorrespondingCaller);
+          double min_pct  = (CurrentCaller.Pct < CorrespondingCaller.Pct ? CurrentCaller.Pct : CorrespondingCaller.Pct);
 
-        CCM->Hit(CurrentCluster, CorrespondingClusters[j]);
+          /* DEBUG 
+          cout << CorrespondingClusters[j] << " (" << min_pct << ") ";
+          cout.flush(); */
+
+          //CCM->Hit(CurrentCluster, CorrespondingClusters[j]);
+          CCM->RaisePct(CurrentCluster, CorrespondingClusters[j], min_pct);
+        }
       }
     }
-    /* DEBUG
+    /* DEBUG 
     cout << endl; */
   }
-  CCM->ComputePcts();
+  //CCM->ComputePcts();
+
+  CCM->Print();
 
   return CCM;
 }
@@ -199,9 +220,28 @@ void Histo3D::insert(CID key, TCaller value)
   H[key].push_back( value );
 }
 
+// int Histo3D::size()
+// {
+//   return H.size();
+// }
+
 int Histo3D::size()
 {
-  return H.size();
+  int max = -1;
+  map< CID, vector<TCaller> >::iterator it;
+  for (it = H.begin(); it != H.end(); ++it)
+  {
+    if (it->first > max)
+    {
+      max = it->first;
+    }
+  }
+  return max;
+}
+
+bool Histo3D::hasCallers(CID cluster_id)
+{
+  return (H.find(cluster_id) != H.end());
 }
 
 void Histo3D::dump()
@@ -226,6 +266,7 @@ void Histo3D::write(string filename)
   ofstream file;
   file.open (filename.c_str());
 
+  file << "ClusterID, Caller, Hits, Pct" << endl;
   map< CID, vector<TCaller> >::iterator it;
   for (it = H.begin(); it != H.end(); ++it)
   {
@@ -249,6 +290,8 @@ bool Histo3D::load(string filename)
     string token, line;
     stringstream iss;
 
+    getline(file, line); // Header
+    
     while ( getline(file, line) )
     {
       CID     key;
@@ -312,4 +355,26 @@ void Histo3D::getClustersWithCaller(string caller_name, vector<CID> &clusters)
   }
 }
 
+bool Histo3D::getClusterCallerStats(CID cluster_id, string caller_name, TCaller &caller_stats)
+{
+  map< CID, vector<TCaller> >::iterator it;
+
+  for (it = H.begin(); it != H.end(); ++ it)
+  {
+    CID key = it->first;
+    if (key == cluster_id)
+    {
+      for (int i = 0; i < it->second.size(); i ++)
+      {
+        TCaller CurrentCaller = it->second[i];
+        if (CurrentCaller.CallerName == caller_name)
+        {
+          caller_stats = CurrentCaller;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
 

@@ -5,8 +5,8 @@
 using std::string;
 #include "SequenceScoring.h"
 #include "ClusterIDs.h"
-#include "ClusterCorrelationMatrix.h"
-#include "Correlation.h"
+#include "CorrelationMatrix.h"
+#include "Links.h"
 
 class SequenceTracker
 {
@@ -20,10 +20,10 @@ public:
   double getGlobalScore();
   double getClusterScore(CID cluster_id);
   int    getNumberOfClusters();
-  ClusterCorrelationMatrix * getClustersSimultaneity();
-  ClusterCorrelationMatrix * CorrelateWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
-  TwoWayCorrelation * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
-  TwoWayCorrelation * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2, CID LastClusterTrace1, CID LastClusterTrace2);
+  CorrelationMatrix * getClustersSimultaneity();
+  CorrelationMatrix * CorrelateWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
+  DoubleLink * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
+  DoubleLink * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2, CID LastClusterTrace1, CID LastClusterTrace2);
 
   void   dump();
 

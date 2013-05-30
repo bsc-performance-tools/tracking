@@ -5,7 +5,7 @@
 using std::vector;
 #include <string>
 using std::string;
-#include "kernelconnection.h"
+#include <localkernel.h>
 
 #define CLUSTER_EV 90000001
 

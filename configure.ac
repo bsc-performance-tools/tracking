@@ -6,7 +6,7 @@
 #########################
 
 # Initialize autoconf & define package name, version and bug-report address 
-AC_INIT(Tracking Tool, 1.0, tools@bsc.es)
+AC_INIT(Tracking Tool, 2.5, tools@bsc.es)
 
 # GNU Autotools intermediate files are stored in the following directory
 AC_CONFIG_AUX_DIR(config)
@@ -30,8 +30,8 @@ AC_PROG_LIBTOOL
 #    Checks for programs    #
 #############################
 
-AC_PROG_CC(gcc xlc cc)
-AC_PROG_CXX(g++ xlC CC)
+AC_PROG_CC(gcc cc xlc)
+AC_PROG_CXX(g++ CC xlC)
 AC_PROG_CPP
 AC_PROG_INSTALL
 
@@ -41,8 +41,8 @@ AM_PROG_CC_C_O
 ##############################
 #    Checks for libraries    #
 ##############################
-AX_PROG_PARAVER
 AX_PROG_CLUSTERING
+AX_PROG_PARAVER
 
 #############################
 #    Checks for headers     #
@@ -63,6 +63,8 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(short int)
 AC_CHECK_TYPES([int64_t, uint64_t, int8_t, uint8_t, int32_t, uint32_t, int16_t, uint16_t])
 
-AC_CONFIG_FILES([Makefile src/Makefile src/scripts/Makefile])
+AC_CONFIG_FILES([Makefile lib/Makefile lib/SequenceScore/Makefile src/Makefile src/scripts/Makefile src/gui/Makefile])
+
+AC_CONFIG_SUBDIRS([lib/ANNClassify])
 
 AC_OUTPUT
