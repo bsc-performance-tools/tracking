@@ -1,10 +1,10 @@
 #!/bin/bash
 
-ulimit -c 12000000
+REAL_PATH=`readlink -f $0`
+TRACKING_HOME="$( cd "$( dirname "$REAL_PATH" )" && pwd )"
+export TRACKING_HOME=${TRACKING_HOME%/bin}
 
-export TRACKING_HOME=@sub_TRACKING_PREFIX@
-
-export LD_LIBRARY_PATH=@sub_BOOST_LDPATH@:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=@sub_BOOST_LDPATH@:$TRACKING_HOME/lib:$LD_LIBRARY_PATH
 
 perl $TRACKING_HOME/bin/tracking.pl $*
 

@@ -1,5 +1,8 @@
 ChangeLog 'Tracking Tool'
 
+2013-05-31 German Llort <german.llort@bsc.es>
+	* Improvements for the distribution of the package. Fixes to resolve paths dynamically for binary distribution.
+
 2013-05-30 German Llort <german.llort@bsc.es>
 	* Everything ported to the newest ClusteringSuite. Several fixes. New GUI. Upgraded to version 2.5.
 

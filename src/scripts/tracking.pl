@@ -11,7 +11,7 @@ my $SuffixAlign          = ".seq";
 my $SuffixPCF            = ".pcf";
 my $SuffixPRV            = ".prv";
 
-my $CallersTemplate    = "@sub_TRACKING_PREFIX@/etc/@sub_CALLERS_TEMPLATE@";
+my $CallersTemplate    = $ENV{'TRACKING_HOME'}."/etc/@sub_CALLERS_TEMPLATE@";
 my $CALLERS_EVENT      = 80000000;
 
 my $CallersLevel        = 0;
@@ -258,8 +258,8 @@ if ($ClusteredTraces == 0)
     (my $TraceBasename = $CurrentTrace) =~ s/\.[^.]+$//;
 
     print "+ Clustering trace ".($i+1)."...\n";
-    print "@sub_CLUSTERING_HOME@/bin/BurstClustering -d $ClusteringConfig -a -ra -s -i $CurrentTrace -o $TraceBasename$SuffixClusteredTrace\n\n";
-    `@sub_CLUSTERING_HOME@/bin/BurstClustering -d $ClusteringConfig -a -ra -s -i $CurrentTrace -o $TraceBasename$SuffixClusteredTrace`;
+    #print $ENV{'CLUSTERING_HOME'}."/bin/BurstClustering -d $ClusteringConfig -a -ra -s -i $CurrentTrace -o $TraceBasename$SuffixClusteredTrace\n\n";
+    `$ENV{'CLUSTERING_HOME'}/bin/BurstClustering -d $ClusteringConfig -a -ra -s -i $CurrentTrace -o $TraceBasename$SuffixClusteredTrace`;
     $InputTraces[$i] = $TraceBasename.$SuffixClusteredTrace;
   }
 }
@@ -328,7 +328,7 @@ print "\n";
 #
 print "+ Scaling clustering frames... ";
 
-my $CMD = "python @sub_TRACKING_PREFIX@/bin/@sub_SCRIPT_SCALE_FRAMES@ ";
+my $CMD = "python ".$ENV{'TRACKING_HOME'}."/bin/@sub_SCRIPT_SCALE_FRAMES@ ";
 if ($DimensionsToScale ne "") 
 {
   $CMD .= "-s $DimensionsToScale ";
@@ -442,7 +442,7 @@ if ($CallersLevel > 0)
 #
 print "\n+ Tracking clusters...\n";
 
-$CMD="@sub_TRACKING_PREFIX@/bin/tracking.bin ";
+$CMD=$ENV{'TRACKING_HOME'}."/bin/tracking.bin ";
 
 if ($ScoreMinimum ne "")
 {
