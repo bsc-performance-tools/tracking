@@ -1,6 +1,9 @@
 ChangeLog 'Tracking Tool'
 
 2013-05-31 German Llort <german.llort@bsc.es>
+	* Fixed missing files in the distribution.
+
+2013-05-31 German Llort <german.llort@bsc.es>
 	* Improvements for the distribution of the package. Fixes to resolve paths dynamically for binary distribution.
 
 2013-05-30 German Llort <german.llort@bsc.es>

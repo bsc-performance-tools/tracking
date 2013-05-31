@@ -1,6 +1,8 @@
 
 noinst_LTLIBRARIES = libSequenceScore.la
 
+EXTRA_DIST = include
+
 libSequenceScore_la_SOURCES = \
     SequenceScoring.cpp \
     include/SequenceScoring.h
