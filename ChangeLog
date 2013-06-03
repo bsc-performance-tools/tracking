@@ -1,5 +1,8 @@
 ChangeLog 'Tracking Tool'
 
+2013-06-03 German Llort <german.llort@bsc.es>
+	* Fixed bug when checking for callstack events in the PCF file.
+
 2013-05-31 German Llort <german.llort@bsc.es>
 	* Fixed missing files in the distribution.
 

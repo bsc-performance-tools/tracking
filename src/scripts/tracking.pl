@@ -402,8 +402,8 @@ if ($CallersLevel > 0)
     my $TracePRV = $TraceWithoutExtension.$SuffixPRV;
 
     # Check first the PCF
-    my $CallersPresentPCF = `cat $TracePCF | grep -m 1 \":$CallersEventType:\"`;
-    if ($CallersPresentPRV eq "")
+    my $CallersPresentPCF = `cat $TracePCF | grep -m 1 \"$CallersEventType\"`;
+    if ($CallersPresentPCF eq "")
     {
       $CallersLevel = 0;
       last;
