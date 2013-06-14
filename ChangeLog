@@ -1,5 +1,8 @@
 ChangeLog 'Tracking Tool'
 
+2013-14-03 German Llort <german.llort@bsc.es>
+	* Fixed bug in the callers tracker (delta fixed to 1 in the 3D histogram)
+
 2013-06-03 German Llort <german.llort@bsc.es>
 	* Fixed bug when checking for callstack events in the PCF file.
 

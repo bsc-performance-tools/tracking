@@ -107,6 +107,7 @@ void CallersTracker::parseHistogram(Histogram * histo, Histo3D *&H)
     return;
   }
   histo->setControlMin(FIRST_VALID_CALLER);
+  histo->setControlDelta(1);
   histo->execute( histo->getBeginTime(), histo->getEndTime(), selectedRows );
 
   /* Select the histogram metric */
