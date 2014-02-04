@@ -389,7 +389,7 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
     /* Get initial correlations from classification */
     if (UseCrossClassify)
     {
-      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 0);
+      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 10);
       CombinedCorrelation->join(ClassifyCorrelation);
     }
 

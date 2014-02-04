@@ -293,10 +293,6 @@ AC_DEFUN([AX_PROG_CLUSTERING],
 # Looks for an installation of wxParaver
 AC_DEFUN([AX_PROG_PARAVER],
 [
-  dnl Check boost existence
-#  BOOST_REQUIRE(1.36)
-#  BOOST_SERIALIZATION
-
   AC_ARG_WITH(paraver,
     AC_HELP_STRING(
       [--with-paraver@<:@=DIR@:>@],
