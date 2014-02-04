@@ -1,6 +1,7 @@
 ChangeLog 'Tracking Tool'
 
 2014-02-04 German Llort <german.llort@bsc.es>
+	* Removed marker '7' to draw the clusters in xtrack 
 	* Fixed configure checks for boost
 	* Set the minimum correlation percentage for the classifier heuristic to 10% (up from 0%)
 	* Upgraded version to 2.51
