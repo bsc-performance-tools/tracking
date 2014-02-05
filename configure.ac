@@ -42,7 +42,7 @@ AM_PROG_CC_C_O
 #    Checks for libraries    #
 ##############################
 BOOST_REQUIRE(1.36)
-#  BOOST_SERIALIZATION
+BOOST_SERIALIZATION
 AX_PROG_CLUSTERING
 AX_PROG_PARAVER
 
