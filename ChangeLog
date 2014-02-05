@@ -1,5 +1,8 @@
 ChangeLog 'Tracking Tool'
 
+2014-02-05 German Llort <german.llort@bsc.es>
+	* Removed more markers that are causing problems to draw in xtrack
+
 2014-02-04 German Llort <german.llort@bsc.es>
 	* Removed marker '7' to draw the clusters in xtrack 
 	* Fixed configure checks for boost

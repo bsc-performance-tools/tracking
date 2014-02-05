@@ -107,7 +107,8 @@ def PRVColor(cluster_id):
 def MetricColor(metric):
     return PRVColor( (Metrics[1].index(metric) + 20) % len(ColorPalette))
 
-Markers = ['o', '+', '*', 's', 'd', '8', 'p', 'D', 'h', 'H', '4', '5', '6', '_', '3', '0', '1', '2', '1', '3', '4', '2', 'v', '<', '>', '^', '|', 'x', ',', '.'] 
+Markers = ['o', '+', '*', 's', 'd', '8', 'p', 'D', 'h', 'H', '4' ]
+#, '_', '3', '0', '1', '2', '1', '3', '4', '2', 'v', '<', '>', '^', '|', 'x', ',', '.'] 
 
 def ChooseMarker(cluster_id):
   return Markers[(cluster_id-FirstCluster) % len(Markers)]
