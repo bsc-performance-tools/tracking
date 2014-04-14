@@ -18,7 +18,7 @@ AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
 AM_INIT_AUTOMAKE
-AM_PROG_MKDIR_P
+AC_PROG_MKDIR_P
 
 dnl =======================================================================
 dnl Final Makefile generation

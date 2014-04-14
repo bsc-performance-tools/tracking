@@ -16,7 +16,7 @@ AC_CANONICAL_SYSTEM
 
 # Initialize automake
 AM_INIT_AUTOMAKE
-AM_PROG_MKDIR_P
+AC_PROG_MKDIR_P
 
 # Specify the output configuration header file
 AC_CONFIG_HEADER(config.h)

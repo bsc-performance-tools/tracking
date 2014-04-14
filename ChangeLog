@@ -2,6 +2,7 @@ ChangeLog 'Tracking Tool'
 
 2014-04-14 German Llort <german.llort@bsc.es>
 	* Rules extracted from the sequence tracker are applied with priorities: the more specific correlations are applied first
+	* Changed deprecated macros AM_PROG_MKDIR_P and mkdir_p into AC_PROG_MKDIR_P and MKDIR_P
 
 2014-02-05 German Llort <german.llort@bsc.es>
 	* Removed more markers that are causing problems to draw in xtrack
