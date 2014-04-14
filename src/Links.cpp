@@ -224,6 +224,58 @@ DoubleLink * DoubleLink::Split(DoubleLink *Specialized)
     Right = it->second;
 
     vector<TLinkedGroups>::iterator it2;
+
+    int over = 0;
+    while (over < Specialized->size())
+    {
+        int min_size = -1;
+	int min_index = -1;
+	int cur_count = 0;
+      
+        for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
+        {
+          int cur_size = 0;
+          TClustersSet Left2, Right2;
+          Left2  = it2->first;
+          Right2 = it2->second;
+
+	  if ((Left2.size() == 1) && ( Right2.size() == 1))
+          {
+		min_size = 2;
+		min_index = cur_count;
+		break;
+          }
+	  else
+	  {
+            cur_size = Left2.size() + Right2.size();
+            if ((min_size == -1) || (cur_size > min_size))
+	    {
+		min_size = cur_size;
+		min_index = cur_count;
+	    }
+	  }
+	  cur_count ++;
+        }
+
+        TClustersSet Left2, Right2;
+	Left2  = Specialized->Links[min_index].first;
+	Right2 = Specialized->Links[min_index].second;
+
+        if ( (subset(Left, Left2) == 2) ||(subset(Right, Right2) == 2) )
+        {
+          TClustersSet SubstractLeft, SubstractRight;
+          set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(),
+            std::inserter(SubstractLeft, SubstractLeft.end()));
+          set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(),
+            std::inserter(SubstractRight, SubstractRight.end()));
+          Left = SubstractLeft;
+          Right = SubstractRight;
+
+          tmp.push_back( make_pair( Left2, Right2 ) );
+        }
+	over++;
+    }
+#if 0
     for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
     {
       TClustersSet Left2, Right2;
@@ -243,6 +295,7 @@ DoubleLink * DoubleLink::Split(DoubleLink *Specialized)
         tmp.push_back( make_pair( Left2, Right2 ) );
       }
     }
+#endif
     if ((Left.size() > 0) || (Right.size() > 0))
     {
       tmp.push_back( make_pair( Left, Right ) );

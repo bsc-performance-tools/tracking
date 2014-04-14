@@ -61,7 +61,7 @@ public:
   TClustersSet FindLink( TClustersSet &LeftGroup );
   void GetUnique(map<CID, CID> &UniqueCorrelations);
 
-private:
+//private:
   vector< TLinkedGroups > Links;
 };
 
