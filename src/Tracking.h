@@ -34,7 +34,7 @@ public:
     DoubleLink        *PairedCombo;
   } ClustersCorrelations_t;
   
-  Tracking(vector<string> traces, vector<CID> last_clusters, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose);
+  Tracking(vector<string> traces, vector<CID> last_clusters, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose);
   ~Tracking();
 
   void CorrelateTraces();
@@ -59,7 +59,9 @@ private:
   SequenceLink *FinalSequence;
   
   double Epsilon;
+  double CrossDistance;
   double MinimumScore;
+  double Threshold;
   string CallersCFG;
   string OutputPrefix;
   bool UseCallers;
@@ -85,7 +87,9 @@ private:
 
 };
 
-#define DEFAULT_MIN_SCORE 0.90
+#define DEFAULT_MIN_SCORE      0.90
+#define DEFAULT_CROSS_DISTANCE 1.00
+#define DEFAULT_THRESHOLD      15
 
 #define HELP \
 "\n"\
@@ -100,7 +104,15 @@ private:
 "\n"\
 "  -c <callers.cfg>           CFG filtering one level of callers to use the callstack tracker\n"\
 "\n"\
+"  -d <max-distance>          Maximum Epsilon distance to use the cross-classifier tracker\n"\
+"\n"\
 "  -h                         Prints this help\n"\
+"\n"\
+"  -o                         Set the prefix for all the output files\n"\
+"\n"\
+"  -r                         Enable the trace reconstruction with tracked clusters\n"\
+"\n"\
+"  -t <threshold>             Minimum likeliness percentage in order to match two clusters\n"\
 "\n"\
 "  -v                         Run in verbose mode\n"\
 "\n"\

@@ -24,6 +24,8 @@ my $OutputPrefix        = "";
 my $Reconstruct         = 0;
 my $ScoreMinimum        = "";
 my $Verbose             = 0;
+my $MaxDistance         = 1.00;
+my $Threshold           = "";
 
 my @InputTraces           = ();
 my $NumberOfTraces        = 0;
@@ -39,19 +41,23 @@ sub PrintUsage
   print "  ".$name." [OPTIONS] [-l LIST | TRACE1 TRACE2 ...]\n";
   print "\nOPTIONS\n";
   print "  -a MIN_SCORE\n";
-  print "        Enable the alignment heuristics if the specified score is met.\n";
+  print "        Minimum SPMD score to use the alignment tracker\n";
   print "  -c CALLER_LEVEL\n";
   print "        Enable the callstack heuristics at the specified depth.\n";
-  print "  -d CLUSTERING_CONFIG_XML\n";
-  print "        Specify the clustering configuration to automatically cluster the traces.\n";
+  print "  -d MAX_DISTANCE\n";
+  print "        Maximum Epsilon distance to use the cross-classifier tracker\n";
   print "  -m MIN_TIME_PCT\n";
   print "        Discard the clusters below the given duration time percentage.\n";
   print "  -s DIM1,DIM2...\n";
-  print "        Select the dimensions to rescale with the number of tasks (DEPRECATED).\n";
+  print "        Select the dimensions to scale with the number of tasks (DEPRECATED).\n";
   print "  -o OUTPUT_PREFIX\n";
   print "        Set the prefix for all the output files.\n";
-  print "  -r    Reconstruct the tracked traces.\n";
-  print "  -v    Verbose mode.\n";
+  print "  -r    Enable the trace reconstruction with tracked clusters.\n";
+  print "  -t THRESHOLD\n";
+  print "        Minimum likeliness percentage in order to match two clusters (special values: all | first).\n";
+  print "  -v    Run in verbose mode.\n";
+  print "  -x CLUSTERING_CONFIG_XML\n";
+  print "        Specify the clustering configuration to automatically cluster the traces.\n";
   print "\n";
 }
 
@@ -130,10 +136,10 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
     case "d"
     {
       $i ++;
-      $ClusteringConfig = $ARGV[$i];
-      if (! -e $ClusteringConfig)
+      $MaxDistance = $ARGV[$i];
+      if (($MaxDistance == 0 && $MaxDistance ne '0') || ($MaxDistance < 0) || ($MaxDistance > 1))
       {
-        print "*** Error: -d: Can't find clustering definition XML file '$ClusteringConfig'\n";
+        print "*** Error: -d: Distance has to be between 0 and 1\n";
         exit;
       }
     }
@@ -166,9 +172,30 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       $i ++;
       $DimensionsToScale = $ARGV[$i];
     }
+    case "t"
+    {
+      $i ++;
+      $Threshold = $ARGV[$i];
+      $Threshold = lc $Threshold;
+      if ((($Threshold == 0 && $Threshold ne '0') || ($Threshold < 0) || ($Threshold > 100)) && ($Threshold ne 'any') && ($Threshold ne 'first'))
+      {
+        print "*** Error: -t: Threshold has to be a percentage between 0 and 100, 'any' or 'first'\n";
+        exit;
+      }
+    }
     case "v"
     {
       $Verbose = 1;
+    }
+    case "x"
+    {
+      $i ++;
+      $ClusteringConfig = $ARGV[$i];
+      if (! -e $ClusteringConfig)
+      {
+        print "*** Error: -d: Can't find clustering definition XML file '$ClusteringConfig'\n";
+        exit;
+      }
     }
     else
     {
@@ -318,6 +345,7 @@ print "\n+ Tracking configuration:\n";
 print "... Sequence of ".$NumberOfTraces." traces\n";
 print "... Minimum cluster time: ".$MinTimePct."%\n";
 print "... Reconstruct traces: ".($Reconstruct == 1 ? "enabled" : "disabled")."\n";
+print "... Distance tracking: ".($MaxDistance > 0 ? "cross-classifying with radius $MaxDistance" : "disabled")."\n";
 print "... Callers tracking: ".($CallersLevel > 0 ? "enabled for level $CallersLevel" : "disabled")."\n";
 print "... Alignment tracking: ".($ScoreMinimum ne "" ? "enabled above score $ScoreMinimum" : "disabled")."\n";
 print "... Verbose: ".($Verbose == 1 ? "yes" : "no")."\n";
@@ -452,9 +480,25 @@ if ($CallersLevel > 0)
 {
   $CMD .= "-c $CallersCFG ";
 }
+if ($MaxDistance ne "")
+{
+  $CMD .= "-d $MaxDistance ";
+}
 if ($Reconstruct == 1)
 {
   $CMD .= "-r ";
+}
+if ($Threshold ne "")
+{
+  if ($Threshold eq "any") 
+  {
+    $Threshold = 0;
+  }
+  elsif ($Threshold eq "first")
+  {
+    $Threshold = -1;
+  }
+  $CMD .= "-t $Threshold ";
 }
 if ($Verbose == 1)
 {
@@ -464,6 +508,7 @@ if ($OutputPrefix ne "")
 {
   $CMD .= "-o $OutputPrefix ";
 }
+
 for ($i=0; $i<@InputTraces; $i++)
 {
   # This appends the last cluster to process per trace according to the percentage of time they represent

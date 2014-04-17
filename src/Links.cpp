@@ -159,6 +159,8 @@ TClustersSet Link::get_Links()
  */
 DoubleLink::DoubleLink(vector<Link *> &Forward, vector<Link *> &Backward)
 {
+  Links.clear();
+
   for (unsigned int i=0; i<Forward.size(); i++)
   {
     TClustersSet LeftGroup, RightGroup;
@@ -378,6 +380,7 @@ vector<TLinkedGroups>::iterator DoubleLink::end()
 void DoubleLink::print()
 {
   vector< TLinkedGroups >::iterator it;
+
   for (it = Links.begin(); it != Links.end(); it ++)
   {
     TClustersSet LeftGroup, RightGroup;

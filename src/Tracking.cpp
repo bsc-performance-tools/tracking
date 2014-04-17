@@ -15,7 +15,7 @@ using std::ofstream;
 #include "SequenceTracker.h"
 #include "TraceReconstructor.h"
 
-Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose)
+Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose)
 {
   /* Configure the tracking algorithm and the different trackers */
   InputTraces        = traces;
@@ -28,9 +28,11 @@ Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, str
   Verbose            = verbose;
   FinalSequence      = NULL;
   MinimumScore       = min_score;
+  CrossDistance      = max_distance;
+  Threshold          = threshold;
 
   /* Select which trackers will be used */
-  UseCrossClassify = true;
+  UseCrossClassify = (max_distance > 0);
   UseCallers       = (callers_cfg.size() > 0 ? true : false);
   UseAlignment     = true;
 
@@ -40,11 +42,25 @@ Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, str
   for (int i=0; i<NumberOfTraces; i++)
   {
     TracesCorrelationMatrix[i] = (ClustersCorrelations_t *)malloc(NumberOfTraces * sizeof(ClustersCorrelations_t));
+/*
     TracesCorrelationMatrix[i]->ByCross    = NULL;
     TracesCorrelationMatrix[i]->ByCallers  = NULL;
     TracesCorrelationMatrix[i]->PairedByMixer    = NULL;
     TracesCorrelationMatrix[i]->PairedBySequence = NULL;
     TracesCorrelationMatrix[i]->PairedCombo      = NULL;
+*/
+  }
+
+  for (int i=0; i<NumberOfTraces; i++)
+  {
+    for (int j=0; j<NumberOfTraces; j++)
+    {
+      TracesCorrelationMatrix[i][j].ByCross = NULL;
+      TracesCorrelationMatrix[i][j].ByCallers = NULL;
+      TracesCorrelationMatrix[i][j].PairedByMixer = NULL;
+      TracesCorrelationMatrix[i][j].PairedBySequence = NULL;
+      TracesCorrelationMatrix[i][j].PairedCombo = NULL;
+    }
   }
 
   PrepareFileNames();
@@ -56,15 +72,19 @@ Tracking::~Tracking()
   {
     for (int i=0; i<NumberOfTraces; i++)
     {
-      if (TracesCorrelationMatrix[i]->ByCross    != NULL) delete TracesCorrelationMatrix[i]->ByCross;
-      if (TracesCorrelationMatrix[i]->ByCallers  != NULL) delete TracesCorrelationMatrix[i]->ByCallers;
-      if (TracesCorrelationMatrix[i]->PairedByMixer    != NULL) delete TracesCorrelationMatrix[i]->PairedByMixer;
-      if (TracesCorrelationMatrix[i]->PairedBySequence != NULL) delete TracesCorrelationMatrix[i]->PairedBySequence;
-      if (TracesCorrelationMatrix[i]->PairedCombo      != NULL) delete TracesCorrelationMatrix[i]->PairedCombo;
-
+      for (int j=0; j<NumberOfTraces; j++)
+      {
+        if (TracesCorrelationMatrix[i][j].ByCross          != NULL) delete TracesCorrelationMatrix[i][j].ByCross;
+        if (TracesCorrelationMatrix[i][j].ByCallers        != NULL) delete TracesCorrelationMatrix[i][j].ByCallers;
+        if (TracesCorrelationMatrix[i][j].PairedByMixer    != NULL) delete TracesCorrelationMatrix[i][j].PairedByMixer;
+        if (TracesCorrelationMatrix[i][j].PairedBySequence != NULL) delete TracesCorrelationMatrix[i][j].PairedBySequence;
+        if (TracesCorrelationMatrix[i][j].PairedCombo      != NULL) delete TracesCorrelationMatrix[i][j].PairedCombo;
+      }
       free(TracesCorrelationMatrix[i]);
+      TracesCorrelationMatrix[i] = NULL;
     }
     free(TracesCorrelationMatrix);
+    TracesCorrelationMatrix = NULL;
   }
 }
 
@@ -150,6 +170,7 @@ void Tracking::CorrelateTraces()
   vector<SequenceTracker *> STs;
   vector<CorrelationMatrix *> BySimultaneity;
 
+
   for (int i=0; i<NumberOfTraces; i++)
   {
     if (UseCallers)
@@ -205,6 +226,7 @@ void Tracking::CorrelateTraces()
         TracesCorrelationMatrix[trace2][trace1].ByCross->Stats();
       }
     }
+
     if ((UseCallers) && (H3Ds[trace1]->size() > 0) && (H3Ds[trace2]->size() > 0))
     {
       cout << "+ Crossing callers between traces " << trace1+1 << " and " << trace2+1 << endl << endl;
@@ -284,6 +306,7 @@ void Tracking::CorrelateTraces()
     if (TracesCorrelationMatrix[trace1][trace2].PairedCombo == NULL)
     {
       TracesCorrelationMatrix[trace1][trace2].PairedCombo = TracesCorrelationMatrix[trace1][trace2].PairedByMixer;
+      TracesCorrelationMatrix[trace1][trace2].PairedByMixer = NULL; /* To avoid double free at destructor */
     }
   }
  
@@ -329,7 +352,7 @@ CorrelationMatrix * Tracking::TrackByCrossClassify(int trace1, int trace2)
   stringstream ssCrossClassifyOutput;
   ssCrossClassifyOutput << "cross-classify-" << trace1 << "-" << trace2 << ".csv";
   
-  CrossClassifier CC = CrossClassifier(InputCSVs[trace1], InputCSVs[trace2], ssCrossClassifyOutput.str(), 1.0);
+  CrossClassifier CC = CrossClassifier(InputCSVs[trace1], InputCSVs[trace2], ssCrossClassifyOutput.str(), CrossDistance);
 
   CorrelationMatrix *CCM = CC.CrossClassify();
   return CCM;
@@ -389,7 +412,7 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
     /* Get initial correlations from classification */
     if (UseCrossClassify)
     {
-      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, 15);
+      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, Threshold);
       CombinedCorrelation->join(ClassifyCorrelation);
     }
 
@@ -405,14 +428,21 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
       }
       else
       {
-        TClustersSet::iterator it;
+        if (UseCrossClassify)
         {
-          for (it = ClassifyCorrelation->begin(); it != ClassifyCorrelation->end(); it++)
+          TClustersSet::iterator it;
           {
-            /* Union all the possible simultaneous clusters */
-            Link *Simultaneous = BySimultaneity[trace2]->getCorrelation(*it, 15);
-            CombinedCorrelation->join(Simultaneous);
+            for (it = ClassifyCorrelation->begin(); it != ClassifyCorrelation->end(); it++)
+            {
+              /* Union all the possible simultaneous clusters */
+              Link *Simultaneous = BySimultaneity[trace2]->getCorrelation(*it, Threshold);
+              CombinedCorrelation->join(Simultaneous);
+            }
           }
+        }
+        else
+        {
+	  CombinedCorrelation = BySimultaneity[trace2]->getCorrelation(CurrentClusterID, Threshold);
         }
       }
     }
@@ -429,7 +459,6 @@ void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vecto
         if ((CombinedCorrelation->size() == 0) || (CallersCorrelation->size() == 1))
         {
           CombinedCorrelation = CallersCorrelation;
-          //CombinedCorrelation = ByCallers->getCorrelation(CurrentClusterID, -1);
         } 
       }
     }

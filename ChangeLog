@@ -1,5 +1,9 @@
 ChangeLog 'Tracking Tool'
 
+2014-04-17 German Llort <german.llort@bsc.es>
+	+ Added arguments "-d" and "-t" to enable/disable the cross-classification heuristic and set a likeliness threshold
+	* Fixed bug allocating/freeing memory
+
 2014-04-14 German Llort <german.llort@bsc.es>
 	* Rules extracted from the sequence tracker are applied with priorities: the more specific correlations are applied first
 	* Changed deprecated macros AM_PROG_MKDIR_P and mkdir_p into AC_PROG_MKDIR_P and MKDIR_P

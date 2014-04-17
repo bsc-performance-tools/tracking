@@ -20,6 +20,8 @@ bool   Reconstruct    = false;
 bool   Verbose        = false;
 string OutputPrefix   = "";
 double MinimumScore   = DEFAULT_MIN_SCORE;
+double CrossDistance  = DEFAULT_CROSS_DISTANCE;
+double Threshold      = DEFAULT_THRESHOLD;
 
 void PrintUsage(char* ApplicationName)
 {
@@ -56,6 +58,14 @@ int ReadArgs(int argc, char *argv[])
           CallersCFG = argv[j];
           CallersCFGRead = true;
           break;
+        case 'd':
+          j++;
+          CrossDistance = atof(argv[j]);
+          break;
+        case 'h':
+          PrintUsage(basename(argv[0]));
+          exit(EXIT_SUCCESS);
+          break;
         case 'o':
           j++;
           OutputPrefix = argv[j];
@@ -64,6 +74,10 @@ int ReadArgs(int argc, char *argv[])
         case 'r':
           Reconstruct = true;
           break;
+        case 't':
+          j++;
+          Threshold = atof(argv[j]);
+          break;
         case 'v':
           Verbose = true;
           break;
@@ -71,6 +85,7 @@ int ReadArgs(int argc, char *argv[])
           cerr << "*** INVALID PARAMETER " << argv[j][1] << " *** " << endl << endl;
           PrintUsage(basename(argv[0]));
           exit(EXIT_FAILURE);
+          break;
       }
     }
   }
@@ -109,7 +124,7 @@ int main(int argc, char **argv)
     NumClustersToTrack.push_back(LastClusterForTrace);
   }
 
-  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, CallersCFG, MinimumScore, OutputPrefix, Reconstruct, Verbose);
+  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, Threshold, CrossDistance, CallersCFG, MinimumScore, OutputPrefix, Reconstruct, Verbose);
 
   ClustersTracking->CorrelateTraces();
   delete ClustersTracking;
