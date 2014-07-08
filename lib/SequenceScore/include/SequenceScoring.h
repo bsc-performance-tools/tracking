@@ -12,84 +12,66 @@
  *
  ******************************************************************************/
 
-#ifndef SEQUENCESCORING_H
-#define SEQUENCESCORING_H
-
-#include "Error.h"
-#include "types.h"
-
-#include <vector>
-using std::vector;
+#ifndef __SEQUENCE_SCORING_H__
+#define __SEQUENCE_SCORING_H__
 
 #include <fstream>
-using std::ifstream;
-
 #include <map>
-using std::map;
-
 #include <set>
-using std::set;
+#include <vector>
+#include "types.h"
+#include "ClusterIDs.h"
+#include "Error.h"
+#include "Links.h"
 
+using std::ifstream;
+using std::map;
 using std::pair;
+using std::set;
+using std::vector;
 
-typedef map<INT32, INT32> TClusterScoreMap;
-typedef vector<TClusterScoreMap> TSequence;
+#define MIN_OCCURRENCE_PCT 0
+
+typedef map<INT32, INT32>                                   ClusterScore_t;
+typedef vector<ClusterScore_t>                              Sequence_t;
+typedef INT32                                               Occurrences_t;
+typedef map< pair<ClusterID_t, ClusterID_t>, Occurrences_t> Matchings_t;
+typedef map< ClusterID_t, Occurrences_t >                   SimultaneousClusters_t;
 
 class SequenceScoring: public Error
 {
   private:
-    
     string   SequenceFileName;
     ifstream SequenceFileStream;
   
     vector< vector<INT32> > ClusterSequences;
-#if defined OLD_TIME_SEQ
-    vector< set<INT32> >        TimeSequence;
-#else
-    TSequence  TimeSequencePercentage;
-#endif
-
+    Sequence_t              GlobalSequence;
+ 
     vector<double>          PercentageDurations;
     INT32                   DifferentClusters;
     map<char,INT32>         AminoacidTranslation;
 
-  
   public:
     SequenceScoring(string SequenceFileName);
   
     bool LoadClustersInformation(string ClustersInfoFileName);
 
-    bool GetScores(vector<double>& Scores, vector<INT32>& Appareances);
+    bool GetScores(vector<double>& Scores, vector<INT32>& Appearances);
     
     void GetPercentageDurations(vector<double>& PercentageDurations);
   
     bool GetGlobalScore(vector<double>& Scores,
                         double&         GlobalScore);
 
-	void CalcTimeSequence();
+    int FindSimultaneousClusters (ClusterID_t ClusterID, SimultaneousClusters_t &Simultaneous);
 
-	void FindSimultaneousClusters (INT32 ClusterID, set<INT32> & SimultaneousClusters);
-    int FindSimultaneousClusters (INT32 ClusterID, map<INT32, int> & SimultaneousClusters);
-
-    void TimeCorrelation(map<INT32, INT32> &UniqueCorrelations, SequenceScoring *SS2, map<TClusterScoreMap, TClusterScoreMap> &SequenceMatching);
-    void TimeCorrelation(map<INT32, INT32> &UniqueCorrelations, SequenceScoring *SS2, vector< pair<TSequence, TSequence> > &SubsequenceCombos);
-
-    int  NextClusterPositionInSequence(SequenceScoring *SS, int ClusterID, int StartingIndex);
-    //void GetSubsequence(SequenceScoring *SS, int FromIndex, int ToIndex, vector<INT32> &Subsequence);
-    void GetSubsequence(SequenceScoring *SS, int FromIndex, int ToIndex, TSequence &Subsequence);
-    //void FindAllSubsequences(SequenceScoring *SS, int FromCluster, int ToCluster, vector< vector<INT32> > &SubsequencesList);
-    void FindAllSubsequences(SequenceScoring *SS, int FromCluster, int ToCluster, vector< TSequence > &SubsequencesList);
-    void PrintSequence(TSequence & Sequence);
-    void PrintClustersScore(TClusterScoreMap & Clusters);
-
-    void GetMatchingsBetweenSequences(TSequence &Seq1, TSequence &Seq2, map<TClusterScoreMap, TClusterScoreMap> &SequenceMatchings);
-    void PrintMatchingsBetweenSequences(map<TClusterScoreMap, TClusterScoreMap> &SequenceMatchings);
-
+    void TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScoring *SS2, Matchings_t &SequenceMatching);
 
   private:
     void LoadAminoacidTable(void);
   
     bool LoadSequences(void);
+
     bool LoadFASTASequences(void);
   
     bool CheckSequences(INT32& SequencesLength);
@@ -103,8 +85,21 @@ class SequenceScoring: public Error
   
     bool ParseRowLine(string Line, vector<UINT64>& ClustersDuration);
 
-    void SplitDiscriminableByPct(TClusterScoreMap m1, TClusterScoreMap m2, map<TClusterScoreMap, TClusterScoreMap> &SequenceMatchings);
-    bool Discriminable(TClusterScoreMap &m);
+    void ComputeGlobalSequence();
+
+    void GetSubsequence(SequenceScoring *SS, int FromIndex, int ToIndex, Sequence_t &Subsequence);
+
+    void FindAllSubsequences(SequenceScoring *SS, int FromCluster, int ToCluster, vector<Sequence_t> &SubsequencesList);
+
+    void PrintSequence(Sequence_t & Sequence);
+
+    void PrintClustersScore(ClusterScore_t & Clusters);
+
+    void GetMatchingsBetweenSequences(Sequence_t  &Seq1, 
+                                      Sequence_t  &Seq2, 
+                                      Matchings_t &SequenceMatchings);
+
+    void PrintMatchings(Matchings_t &SequenceMatchings);
 };
 
-#endif /* SEQUENCESCORING_H */
+#endif /* __SEQUENCE_SCORING_H__ */

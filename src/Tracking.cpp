@@ -10,12 +10,10 @@ using std::stringstream;
 using std::ofstream;
 #include "Tracking.h"
 #include "Utils.h"
-#include "CrossClassifier.h"
-#include "CallersTracker.h"
-#include "SequenceTracker.h"
 #include "TraceReconstructor.h"
+#include <boost/algorithm/string/join.hpp>
 
-Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose)
+Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose)
 {
   /* Configure the tracking algorithm and the different trackers */
   InputTraces        = traces;
@@ -30,36 +28,41 @@ Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, dou
   MinimumScore       = min_score;
   CrossDistance      = max_distance;
   Threshold          = threshold;
+  TimeThresholdAfter = 5;
+  TrackersAppliedAtRound1.clear();
+  ClustersInfoData.clear();
 
   /* Select which trackers will be used */
-  UseCrossClassify = (max_distance > 0);
+  UseDistance = (max_distance > 0);
   UseCallers       = (callers_cfg.size() > 0 ? true : false);
   UseAlignment     = true;
+  UseDensity       = false;
 
-  TracesCorrelationMatrix = NULL;
+  Alignments.clear();
+  Histograms.clear();
 
-  TracesCorrelationMatrix = (ClustersCorrelations_t **)malloc(NumberOfTraces * sizeof(ClustersCorrelations_t *));
+  FramesMatrix = NULL;
+
+  FramesMatrix = (FramesMatrix_t **)malloc(NumberOfTraces * sizeof(FramesMatrix_t *));
   for (int i=0; i<NumberOfTraces; i++)
   {
-    TracesCorrelationMatrix[i] = (ClustersCorrelations_t *)malloc(NumberOfTraces * sizeof(ClustersCorrelations_t));
-/*
-    TracesCorrelationMatrix[i]->ByCross    = NULL;
-    TracesCorrelationMatrix[i]->ByCallers  = NULL;
-    TracesCorrelationMatrix[i]->PairedByMixer    = NULL;
-    TracesCorrelationMatrix[i]->PairedBySequence = NULL;
-    TracesCorrelationMatrix[i]->PairedCombo      = NULL;
-*/
+    FramesMatrix[i] = (FramesMatrix_t *)malloc(NumberOfTraces * sizeof(FramesMatrix_t));
   }
 
   for (int i=0; i<NumberOfTraces; i++)
   {
     for (int j=0; j<NumberOfTraces; j++)
     {
-      TracesCorrelationMatrix[i][j].ByCross = NULL;
-      TracesCorrelationMatrix[i][j].ByCallers = NULL;
-      TracesCorrelationMatrix[i][j].PairedByMixer = NULL;
-      TracesCorrelationMatrix[i][j].PairedBySequence = NULL;
-      TracesCorrelationMatrix[i][j].PairedCombo = NULL;
+      FramesMatrix[i][j].ByCallers   = NULL;
+      FramesMatrix[i][j].ByDensity   = NULL;
+      FramesMatrix[i][j].ByDistance  = NULL;
+      FramesMatrix[i][j].BySequence  = NULL;
+      FramesMatrix[i][j].BySPMD = NULL;
+
+      FramesMatrix[i][j].OneWay = NULL;
+      FramesMatrix[i][j].TwoWay = NULL;
+      FramesMatrix[i][j].Final  = NULL;
+      
     }
   }
 
@@ -68,24 +71,40 @@ Tracking::Tracking(vector<string> traces, vector<CID> num_clusters_to_track, dou
 
 Tracking::~Tracking()
 {
-  if (TracesCorrelationMatrix != NULL)
+  if (FramesMatrix != NULL)
   {
     for (int i=0; i<NumberOfTraces; i++)
     {
       for (int j=0; j<NumberOfTraces; j++)
       {
-        if (TracesCorrelationMatrix[i][j].ByCross          != NULL) delete TracesCorrelationMatrix[i][j].ByCross;
-        if (TracesCorrelationMatrix[i][j].ByCallers        != NULL) delete TracesCorrelationMatrix[i][j].ByCallers;
-        if (TracesCorrelationMatrix[i][j].PairedByMixer    != NULL) delete TracesCorrelationMatrix[i][j].PairedByMixer;
-        if (TracesCorrelationMatrix[i][j].PairedBySequence != NULL) delete TracesCorrelationMatrix[i][j].PairedBySequence;
-        if (TracesCorrelationMatrix[i][j].PairedCombo      != NULL) delete TracesCorrelationMatrix[i][j].PairedCombo;
+        if (FramesMatrix[i][j].ByCallers   != NULL) delete FramesMatrix[i][j].ByCallers;
+        if (FramesMatrix[i][j].ByDensity   != NULL) delete FramesMatrix[i][j].ByDensity;
+        if (FramesMatrix[i][j].ByDistance  != NULL) delete FramesMatrix[i][j].ByDistance;
+        if (FramesMatrix[i][j].BySequence  != NULL) delete FramesMatrix[i][j].BySequence;
+        if (FramesMatrix[i][j].BySPMD != NULL) delete FramesMatrix[i][j].BySPMD;
+
+        if (FramesMatrix[i][j].OneWay      != NULL) delete FramesMatrix[i][j].OneWay;
+        if (FramesMatrix[i][j].TwoWay      != NULL) delete FramesMatrix[i][j].TwoWay;
+        if (FramesMatrix[i][j].Final       != NULL) delete FramesMatrix[i][j].Final;
       }
-      free(TracesCorrelationMatrix[i]);
-      TracesCorrelationMatrix[i] = NULL;
+      free(FramesMatrix[i]);
+      FramesMatrix[i] = NULL;
     }
-    free(TracesCorrelationMatrix);
-    TracesCorrelationMatrix = NULL;
+    free(FramesMatrix);
+    FramesMatrix = NULL;
   }
+
+  for (int i=0; i<Alignments.size(); i++)
+  {
+    delete Alignments[i];
+  }
+  Alignments.clear();
+
+  for (int i=0; i<Histograms.size(); i++)
+  {
+    delete Histograms[i];
+  }
+  Histograms.clear();
 }
 
 /**
@@ -136,6 +155,7 @@ void Tracking::PrepareFileNames()
     OrigCSVs.push_back( CSVOrig );
     InputCSVs.push_back( CSVNorm );
     InputCINFOs.push_back( CINFOFile );
+    ClustersInfoData.push_back( new ClustersInfo( CINFOFile ) );
     TotalClusters.push_back( ReadNumClustersFromFile(CINFOFile) );
     InputAlignments.push_back( AlignFile );
     OutputTraces.push_back( TraceBaseName + SUFFIX_TRACKED_TRACE );
@@ -166,153 +186,19 @@ void Tracking::PrepareFileNames()
 
 void Tracking::CorrelateTraces()
 {
-  vector<Histo3D *>         H3Ds;
-  vector<SequenceTracker *> STs;
-  vector<CorrelationMatrix *> BySimultaneity;
-
-
-  for (int i=0; i<NumberOfTraces; i++)
-  {
-    if (UseCallers)
-    {
-      cout << "+ Computing histogram of callers per cluster for trace " << i+1 << "..." << endl;
-      CallersTracker CT = CallersTracker();
-      H3Ds.push_back( CT.Compute3D(InputTraces[i], CallersCFG, OutputHistoCallers[i]) ) ;
-      if (H3Ds[i]->size() <= 0)
-      {
-        cout << "WARNING: Histogram is empty. Callers will not be used for trace " << i+1 << ". Try increasing the callers level!" << endl;
-      }
-      cout << endl;
-    }
-    if (UseAlignment)
-    { 
-      cout << endl << "+ Computing sequence alignment for trace " << i+1 << "..." << endl << endl;
-      STs.push_back( new SequenceTracker(InputAlignments[i], InputCINFOs[i]) );
-      
-      if (STs[i]->isAvailable())
-      {
-        cout << endl << "+ Building simultaneity matrix for trace " << i+1 << "..." << endl << endl;
-        BySimultaneity.push_back( STs[i]->getClustersSimultaneity() );
-        if (Verbose)
-        {
-          BySimultaneity[i]->Print();
-          BySimultaneity[i]->Stats();
-        }
-      }
-      else
-      {
-        BySimultaneity.push_back( NULL );
-      }
-    }
-  }
-  for (int trace1=0; trace1<NumberOfTraces-1; trace1++)
-  {
-    int trace2 = trace1+1;
-
-    if (UseCrossClassify)
-    {
-      cout << "+ Cross-classifying traces " << trace1+1 << " and " << trace2+1 << endl << endl;
-      TracesCorrelationMatrix[trace1][trace2].ByCross = TrackByCrossClassify(trace1, trace2);
-      if (Verbose)
-      {
-        TracesCorrelationMatrix[trace1][trace2].ByCross->Print();
-        TracesCorrelationMatrix[trace1][trace2].ByCross->Stats();
-      }
-      cout << "+ Cross-classifying traces " << trace2+1 << " and " << trace1+1 << endl << endl;
-      TracesCorrelationMatrix[trace2][trace1].ByCross = TrackByCrossClassify(trace2, trace1);
-      if (Verbose)
-      {
-        TracesCorrelationMatrix[trace2][trace1].ByCross->Print();
-        TracesCorrelationMatrix[trace2][trace1].ByCross->Stats();
-      }
-    }
-
-    if ((UseCallers) && (H3Ds[trace1]->size() > 0) && (H3Ds[trace2]->size() > 0))
-    {
-      cout << "+ Crossing callers between traces " << trace1+1 << " and " << trace2+1 << endl << endl;
-      TracesCorrelationMatrix[trace1][trace2].ByCallers = TrackByCallers(trace1, trace2, H3Ds);
-      if (Verbose)
-      {
-        TracesCorrelationMatrix[trace1][trace2].ByCallers->Print();
-        TracesCorrelationMatrix[trace1][trace2].ByCallers->Stats();
-      }
-      cout << "+ Crossing callers between traces " << trace2+1 << " and " << trace1+1 << endl << endl;
-      TracesCorrelationMatrix[trace2][trace1].ByCallers = TrackByCallers(trace2, trace1, H3Ds);
-      if (Verbose)
-      {
-        TracesCorrelationMatrix[trace2][trace1].ByCallers->Print();
-        TracesCorrelationMatrix[trace2][trace1].ByCallers->Stats();
-      }
-    }
-
-    vector<Link *> Forward, Backward;
-    Mix(trace1, trace2, STs, BySimultaneity, Forward);
-    Mix(trace2, trace1, STs, BySimultaneity, Backward);
-
-    TracesCorrelationMatrix[trace1][trace2].PairedByMixer = new DoubleLink(Forward, Backward);
-    if (Verbose)
-    {
-      cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << ":" << endl << endl;
-      TracesCorrelationMatrix[trace1][trace2].PairedByMixer->print();
-    }
-
-    if ((UseAlignment) && (STs[trace1]->isAvailable()) && (STs[trace2]->isAvailable()))
-    {
-      double Score1 = STs[trace1]->getGlobalScore();
-      double Score2 = STs[trace2]->getGlobalScore();
-
-      if ((Score1 < MinimumScore) || (Score2 < MinimumScore))
-      {
-        cout << "WARNING: Skipping time sequences correlation between traces " << trace1+1 << " and " << trace2+1;
-        cout << " due to low scores (Score1=" << Score1 << ", Score2=" << Score2 << ", Minimum= " << MinimumScore << ")" << endl;
-      }
-      else 
-      {
-        /* Get the correlations that are univocal */
-        map<CID, CID> UniqueCorrelations;
-        TracesCorrelationMatrix[trace1][trace2].PairedByMixer->GetUnique(UniqueCorrelations);
-        if (Verbose)
-        {
-          cout << "(" << UniqueCorrelations.size() << " univocal correlations)" << endl << endl;
-        }
-        if (UniqueCorrelations.size() > 0)
-        {
-          TracesCorrelationMatrix[trace1][trace2].PairedBySequence = STs[trace1]->PairWithAnother(
-             UniqueCorrelations, 
-             STs[trace2], 
-             NumClustersToTrack[trace1], 
-             NumClustersToTrack[trace2]);
-
-//          TracesCorrelationMatrix[trace1][trace2].PairedBySequence->Combine();
-
-          if (TracesCorrelationMatrix[trace1][trace2].PairedBySequence->size() > 0)
-          {
-            if (Verbose)
-            {
-              cout << "+ 2-way correlation between traces " << trace1+1 << " and " << trace2+1 << " (REPORTED BY SEQUENCE TRACKER):" << endl << endl;
-              TracesCorrelationMatrix[trace1][trace2].PairedBySequence->print();
-              cout << endl;
-            }
-          
-            cout << endl << "+ Combining heuristic and sequence correlations:" << endl << endl;
-            TracesCorrelationMatrix[trace1][trace2].PairedCombo = 
-              TracesCorrelationMatrix[trace1][trace2].PairedByMixer->Split( 
-                TracesCorrelationMatrix[trace1][trace2].PairedBySequence );
-            TracesCorrelationMatrix[trace1][trace2].PairedCombo->print();
-          }
-        }
-      }
-    }
-    if (TracesCorrelationMatrix[trace1][trace2].PairedCombo == NULL)
-    {
-      TracesCorrelationMatrix[trace1][trace2].PairedCombo = TracesCorrelationMatrix[trace1][trace2].PairedByMixer;
-      TracesCorrelationMatrix[trace1][trace2].PairedByMixer = NULL; /* To avoid double free at destructor */
-    }
-  }
+  /* Run density, distance, SPMD and callers trackers */
+  RunTrackers1();
  
-  BuildFinalSequence();
+  /* Merge their results */
+  CombineTrackers1();
 
-  // GeneratePlots();
+  /* Run the sequence tracker */ 
+  RunTrackers2();
+
+  /* Merge with previous results */
+  CombineTrackers2();
+
+  BuildFinalSequence();
 
   Recolor();
 
@@ -324,6 +210,187 @@ void Tracking::CorrelateTraces()
   cout << "+ Tracking finished!" << endl;
 }
 
+void Tracking::RunTrackers1()
+{
+  /* First compute the clusters alignments and the callers per cluster histograms for each trace */
+  for (int i = 0; i < NumberOfTraces; i++)
+  {
+    if (UseAlignment)
+    {
+      cout << endl << "+ Computing clusters alignment sequence for trace " << i+1 << "..." << endl;
+
+      Alignments.push_back( new ClustersAlignment( InputAlignments[i], InputCINFOs[i] ) );
+
+      cout << endl;
+    }
+    if (UseCallers)
+    {
+      cout << "+ Computing histogram of callers per cluster for trace " << i+1 << "..." << endl;
+      
+      Histograms.push_back( new CallersHistogram( InputTraces[i], CallersCFG, OutputHistoCallers[i]) );
+      if (Histograms[i]->size() <= 0)
+      {
+        cout << "WARNING: Callers histogram for trace " << i+1 << " is empty! Callers tracker will not be used, try increasing the callers level..." << endl;
+      }
+
+      cout << endl;
+    }
+  }
+
+  /* Run the SPMDiness tracker on each trace */
+  if (UseAlignment)
+  {
+    for (int i = 0; i < NumberOfTraces; i++)
+    {
+      cout << "+ Running SPMDiness tracker on trace " << i+1 << "..." << endl << endl;
+      FramesMatrix[i][i].BySPMD = new SPMDTracker( Alignments[i] );
+      FramesMatrix[i][i].BySPMD->Track();
+    }
+  }
+  else
+  {
+    cout << "+ SPMDiness tracker has been disabled" << endl << endl;
+  }
+
+  for (int frame1=0; frame1<NumberOfTraces-1; frame1++)
+  {
+    int frame2 = frame1+1;
+
+    if (UseDensity)
+    {
+      cout << "+ Running density tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      FramesMatrix[frame1][frame2].ByDensity = new DensityTracker( ClustersInfoData[frame1], ClustersInfoData[frame2] );
+      FramesMatrix[frame1][frame2].ByDensity->Track();
+    }
+    else
+    {
+      cout << "+ Density tracker has been disabled" << endl << endl;
+    }
+
+    if (UseDistance)
+    {
+      cout << "+ Running distance tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      FramesMatrix[frame1][frame2].ByDistance = new DistanceTracker(frame1, InputCSVs[frame1], frame2, InputCSVs[frame2]);
+      FramesMatrix[frame1][frame2].ByDistance->Track();
+
+      cout << "+ Running distance tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+      FramesMatrix[frame2][frame1].ByDistance = new DistanceTracker(frame2, InputCSVs[frame2], frame1, InputCSVs[frame1]);
+      FramesMatrix[frame2][frame1].ByDistance->Track();
+    }
+    else
+    {
+      cout << "+ Distance tracker has been disabled" << endl << endl;
+    }
+
+    if ((UseCallers) && (Histograms[frame1]->size() > 0) && (Histograms[frame2]->size() > 0))
+    {
+      cout << "+ Running callers tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      FramesMatrix[frame1][frame2].ByCallers = new CallersTracker( Histograms[frame1], Histograms[frame2] );
+      FramesMatrix[frame1][frame2].ByCallers->Track();
+
+      cout << "+ Running callers tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+      FramesMatrix[frame2][frame1].ByCallers = new CallersTracker( Histograms[frame2], Histograms[frame1] );
+      FramesMatrix[frame2][frame1].ByCallers->Track();
+    }
+    else
+    {
+      cout << "+ Callers tracker has been disabled" << endl << endl;
+    }
+  }
+}
+
+void Tracking::CombineTrackers1()
+{
+  for (int frame1=0; frame1<NumberOfTraces-1; frame1++)
+  {
+    int frame2 = frame1+1;
+
+    CompareFrames( frame1, frame2 );
+
+    CompareFrames( frame2, frame1 );
+
+    FramesMatrix[frame1][frame2].TwoWay = new DoubleLinks( FramesMatrix[frame1][frame2].OneWay, FramesMatrix[frame2][frame1].OneWay );
+  }
+}
+
+void Tracking::RunTrackers2()
+{
+  for (int frame1=0; frame1<NumberOfTraces-1; frame1++)
+  {
+    int frame2 = frame1+1;
+
+    if ((UseAlignment) && (Alignments[frame1]->Exists()) && (Alignments[frame2]->Exists()))
+    {
+      double Score1 = Alignments[frame1]->GlobalScore();
+      double Score2 = Alignments[frame2]->GlobalScore();
+
+      if ((Score1 < MinimumScore) || (Score2 < MinimumScore))
+      {
+        cout << "WARNING: Skipping time sequences correlation between traces " << frame1+1 << " and " << frame2+1;
+        cout << " due to low scores (Score1=" << Score1 << ", Score2=" << Score2 << ", Minimum= " << MinimumScore << ")" << endl;
+      }
+      else
+      {
+        /* Get the links that are univocal from the first round of combinations */
+        DoubleLinks *UnivocalLinks = FramesMatrix[frame1][frame2].TwoWay->GetUnivocal();
+
+        if (Verbose)
+        {
+          cout << "(" << UnivocalLinks->size() << " univocal links)" << endl << endl;
+        }
+        if ((UnivocalLinks->size() > 0) && (UnivocalLinks->size() < FramesMatrix[frame1][frame2].TwoWay->size()))
+        {
+          cout << "+ Running sequence tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+          FramesMatrix[frame1][frame2].BySequence = new SequenceTracker( Alignments[frame1], Alignments[frame2], UnivocalLinks );
+          FramesMatrix[frame1][frame2].BySequence->Track();
+        }
+      }
+    }
+  }
+}
+
+void Tracking::CombineTrackers2()
+{
+  for (int frame1=0; frame1<NumberOfTraces-1; frame1++)
+  {
+    int frame2 = frame1+1;
+    Tracker    *BySequence    = FramesMatrix[frame1][frame2].BySequence;
+
+    if (BySequence != NULL)
+    {
+      DoubleLinks *SequenceLinks = BySequence->getLinks( Threshold );
+
+      if (SequenceLinks->size() > 0)
+      {
+        cout << endl << "+ Combining all trackers for frames " << frame1+1 << " and " << frame2+1 << "..." << endl << endl;
+
+        if (Verbose)
+        {
+          string TrackersApplied = boost::algorithm::join(TrackersAppliedAtRound1, " + ");
+
+          cout << "... 2-way links from " << TrackersApplied << " trackers: " << endl << endl;
+          FramesMatrix[frame1][frame2].TwoWay->print();
+          cout << endl;
+          cout << "... 2-way links from SEQUENCE tracker:" << endl << endl;
+          SequenceLinks->print();
+          cout << endl;
+        }
+
+        FramesMatrix[frame1][frame2].Final = FramesMatrix[frame1][frame2].TwoWay->Split( SequenceLinks );
+
+        cout << "+ Resulting links between frames " << frame1+1 << " and " << frame2+1 << ":" << endl << endl;
+        FramesMatrix[frame1][frame2].Final->print();
+      }
+    }
+
+    if (FramesMatrix[frame1][frame2].Final == NULL)
+    {
+      FramesMatrix[frame1][frame2].Final = FramesMatrix[frame1][frame2].TwoWay;
+      FramesMatrix[frame1][frame2].TwoWay = NULL; /* To avoid double free at destructor */
+    }
+  }
+}
+
 void Tracking::BuildFinalSequence()
 {
   cout << endl << "+ Computing the final clusters sequences..." << endl << endl;
@@ -332,166 +399,193 @@ void Tracking::BuildFinalSequence()
   ofstream fd;
   fd.open (OutputSequenceFile.c_str(), ios::out | ios::trunc);
 
-  vector<DoubleLink *> AllPairs;
+  vector<DoubleLinks *> AllPairs;
 
-  for (int trace1=0; trace1<NumberOfTraces-1; trace1++)
+  for (int frame1=0; frame1<NumberOfTraces-1; frame1++)
   {
-    int trace2 = trace1+1;
-    AllPairs.push_back ( TracesCorrelationMatrix[trace1][trace2].PairedCombo );
+    int frame2 = frame1+1;
+    AllPairs.push_back ( FramesMatrix[frame1][frame2].Final );
   }
 
-  FinalSequence = new SequenceLink(AllPairs);
+  FinalSequence = new SequenceLink(AllPairs, ClustersInfoData, TimeThresholdAfter);
 
-  FinalSequence->write(fd);
+  cout << "+ Final sequences: " << endl << endl;
+
+  FinalSequence->write(cout, true, true);
+  FinalSequence->write(fd,   true, false);
 
   fd.close();
 }
 
-CorrelationMatrix * Tracking::TrackByCrossClassify(int trace1, int trace2)
+void Tracking::CompareFrames(int frame1, int frame2)
 {
-  stringstream ssCrossClassifyOutput;
-  ssCrossClassifyOutput << "cross-classify-" << trace1 << "-" << trace2 << ".csv";
-  
-  CrossClassifier CC = CrossClassifier(InputCSVs[trace1], InputCSVs[trace2], ssCrossClassifyOutput.str(), CrossDistance);
+  int ClustersInFrame1 = NumClustersToTrack[frame1];
 
-  CorrelationMatrix *CCM = CC.CrossClassify();
-  return CCM;
-}
+  Tracker *ByCallers   = FramesMatrix[frame1][frame2].ByCallers;
+  Tracker *ByDensity   = FramesMatrix[frame1][frame2].ByDensity;
+  Tracker *ByDistance  = FramesMatrix[frame1][frame2].ByDistance;
+  Tracker *BySPMD = FramesMatrix[frame2][frame2].BySPMD;
 
-CorrelationMatrix * Tracking::TrackByCallers(int trace1, int trace2, vector<Histo3D *> &H3Ds)
-{
-  CallersTracker CC = CallersTracker();
-  Histo3D *H1, *H2;
-  
-  H1 = H3Ds[trace1];
-  H2 = H3Ds[trace2];
+  bool DensityApplicable   = ((UseDensity)   && (ByDensity  != NULL));
+  bool DistanceApplicable  = ((UseDistance)  && (ByDistance != NULL));
+  bool CallersApplicable   = ((UseCallers)   && (ByCallers  != NULL));
+  bool AlignmentApplicable = ((UseAlignment) && (Alignments[frame1]->Exists()) && (Alignments[frame2]->Exists()));
+  bool SPMDinessApplicable = false;
 
-  CorrelationMatrix *CCM = CC.CrossCallers(H1, H2);
-
-  return CCM;
-}
-
-void Tracking::Mix(int trace1, int trace2, vector<SequenceTracker *> &STs, vector<CorrelationMatrix *> &BySimultaneity, vector <Link *> &ResultingMatch)
-{
-  CorrelationMatrix *ByCrossClassify = TracesCorrelationMatrix[trace1][trace2].ByCross;
-  CorrelationMatrix *ByCallers       = TracesCorrelationMatrix[trace1][trace2].ByCallers;
-
-  bool CrossApplicable    = ((UseCrossClassify) && (ByCrossClassify != NULL));
-  bool CallersApplicable  = ((UseCallers) && (ByCallers != NULL));
-  bool SequenceApplicable = ((UseAlignment) && (STs[trace2]->isAvailable()) && (BySimultaneity[trace2] != NULL));
-
-  ResultingMatch.clear();
-
-  if (SequenceApplicable)
+  if (AlignmentApplicable)
   {
-    double GlobalScore  = STs[trace2]->getGlobalScore();
+    double GlobalScoreFrame2 = Alignments[frame2]->GlobalScore();
 
-    if (GlobalScore < MinimumScore)
+    if (GlobalScoreFrame2 < MinimumScore)
     {
-      cout << "WARNING: Global score for trace " << trace2+1 << " is too low=" << GlobalScore << " (Minimum=" << MinimumScore << ")" << endl;
-      SequenceApplicable = false;
+      cout << "WARNING: SPMD tracker ignored for frame " << frame2+1 << " because Global Score=" << GlobalScoreFrame2 << " is below the minimum " << MinimumScore << ")" << endl;
+      AlignmentApplicable = false;
+    }
+    else
+    {
+      SPMDinessApplicable = true;
     }
   }
-
-  if ((!CrossApplicable) && (!CallersApplicable) && (!SequenceApplicable))
+  if ((!DensityApplicable) && (!DistanceApplicable) && (!CallersApplicable) && (!SPMDinessApplicable))
   {
     cerr << endl;
-    cerr << "ERROR: Any heuristic can be applied to cross traces " << trace1+1 << " and " << trace2+1 << "." << endl;
+    cerr << "ERROR: Any tracker meets the conditions on frames " << frame1+1 << " and " << frame2+1 << "." << endl;
     cerr << "Please review the execution log for previous errors and change the configuration. Aborting..." << endl << endl;
     exit(-1);
   }
 
-  //int ClustersPerTrace = ByCrossClassify->getNumberOfClusters(); /* Process all clusters for this trace */ 
-  int ClustersPerTrace = NumClustersToTrack[trace1];
+  FramesMatrix[frame1][frame2].OneWay = new FrameLinks();
 
-  for (CID CurrentClusterID = 1; CurrentClusterID <= ClustersPerTrace; CurrentClusterID ++)
+  int ObjectsInFrame1 = NumClustersToTrack[frame1];
+
+  for (ClusterID_t CurrentClusterID = 1; CurrentClusterID <= ObjectsInFrame1; CurrentClusterID ++)
   {
-    Link *CombinedCorrelation = new Link(CurrentClusterID);
-    Link *ClassifyCorrelation = NULL;
+    ObjectLinks *CombinedLinks = new ObjectLinks(CurrentClusterID);
 
-    /* Get initial correlations from classification */
-    if (UseCrossClassify)
+    if (Verbose > 1)
     {
-      ClassifyCorrelation = ByCrossClassify->getCorrelation(CurrentClusterID, Threshold);
-      CombinedCorrelation->join(ClassifyCorrelation);
+      cout << "[DEBUG] ... Finding links for cluster " << CurrentClusterID << " between frames " << frame1+1 << " and " << frame2+1 << endl;
     }
 
-    /* Find simultaneous clusters for every possible correlation */
-    if (SequenceApplicable)
+    /* Retrieve links discovered by the density tracker */
+    if (DensityApplicable)
     {
-      double ClusterScore = STs[trace2]->getClusterScore(CurrentClusterID);
-
-      if (ClusterScore < MinimumScore)
+      ObjectLinks *DensityLinks = ByDensity->getLinks( CurrentClusterID, Threshold );
+      
+      if (Verbose > 1)
       {
-        cout << "WARNING: Cluster " << CurrentClusterID << " score in trace " << trace2+1;
-        cout << " is too low=" << ClusterScore << " (Minimum=" << MinimumScore << ")" << endl;
+        cout << "[DEBUG] ...... According to DENSITY tracker: ";
+        DensityLinks->print();
       }
-      else
+
+      CombinedLinks->intersect( DensityLinks );
+      delete DensityLinks;
+      TrackersAppliedAtRound1.insert( "DENSITY" );
+    }
+
+    /* Retrieve links discovered by the distance tracker and intersect with the previous */
+    if (DistanceApplicable)
+    {
+      ObjectLinks *DistanceLinks = ByDistance->getLinks( CurrentClusterID, Threshold );
+
+      if (Verbose > 1)
       {
-        if (UseCrossClassify)
+        cout << "[DEBUG] ...... According to DISTANCE tracker: ";
+        DistanceLinks->print();
+      }
+
+      CombinedLinks->intersect( DistanceLinks );
+      delete DistanceLinks;
+      TrackersAppliedAtRound1.insert( "DISTANCE" );
+    }
+
+    /* For the links found so far, find their SPMD links in the second frame */
+    if (SPMDinessApplicable)
+    {
+      vector< ClusterID_t > ClustersToExpand;
+      ObjectLinks_iterator_t it;
+
+      for (it = CombinedLinks->begin(); it != CombinedLinks->end(); ++ it)
+      {
+        ClusterID_t    TargetClusterID    = *it;
+        double TargetClusterScore = Alignments[frame2]->ClusterScore(TargetClusterID);
+
+        if (TargetClusterScore >= MinimumScore)
         {
-          TClustersSet::iterator it;
-          {
-            for (it = ClassifyCorrelation->begin(); it != ClassifyCorrelation->end(); it++)
-            {
-              /* Union all the possible simultaneous clusters */
-              Link *Simultaneous = BySimultaneity[trace2]->getCorrelation(*it, Threshold);
-              CombinedCorrelation->join(Simultaneous);
-            }
-          }
+          ClustersToExpand.push_back( TargetClusterID );
         }
         else
         {
-	  CombinedCorrelation = BySimultaneity[trace2]->getCorrelation(CurrentClusterID, Threshold);
+          cout << "WARNING: SPMD links ignored for cluster " << TargetClusterID << " at frame " << frame2 
+               << " because SPMD score (" << TargetClusterScore << ") is below minimum (" << MinimumScore 
+               << ")" << endl;
         }
       }
-    }
-
-    /* Intersect with callers information */
-    if ((UseCallers) && (ByCallers != NULL))
-    {
-      Link *CallersCorrelation = ByCallers->getCorrelation(CurrentClusterID, 0);
-      if (CallersCorrelation->size() > 0)
+      /* Extend the links with the results from the SPMD tracker */
+      for (int i = 0; i < ClustersToExpand.size(); i ++)
       {
-        CombinedCorrelation->intersect(CallersCorrelation);
-    
-        /* If the heuristics are contradictory, or callers are unique (and not empty), follow callers */
-        if ((CombinedCorrelation->size() == 0) || (CallersCorrelation->size() == 1))
+        ObjectLinks *SPMDLinks = BySPMD->getLinks( ClustersToExpand[i], Threshold );
+          
+        if (Verbose > 1)
         {
-          CombinedCorrelation = CallersCorrelation;
-        } 
+          cout << "[DEBUG] ...... According to SPMD tracker: ";
+          SPMDLinks->print();
+        }
+
+        CombinedLinks->join( SPMDLinks );
+        delete SPMDLinks;
+        TrackersAppliedAtRound1.insert( "SPMD" );
       }
     }
 
-    ResultingMatch.push_back( CombinedCorrelation );
+    /* Intersect with callers tracker */
+    if (CallersApplicable) 
+    {
+      ObjectLinks *CallersLinks = ByCallers->getLinks(CurrentClusterID, Threshold);
+
+      if (Verbose > 1)
+      {
+        cout << "[DEBUG] ...... According to CALLERS tracker: ";
+        CallersLinks->print();
+      }
+
+      if (CallersLinks->size() > 0)
+      {
+        CombinedLinks->intersect(CallersLinks);
+    
+        /* In case of disagreement or if callers are unique and not empty, trust callers */
+        if ((CombinedLinks->size() <= 0) || (CallersLinks->size() == 1))
+        {
+          delete CombinedLinks;
+          CombinedLinks = CallersLinks;
+          TrackersAppliedAtRound1.clear();
+        } 
+        else
+        {
+          delete CallersLinks;
+        }
+        TrackersAppliedAtRound1.insert( "CALLERS" );
+      }
+    }
+
+    if (Verbose > 1)
+    {
+      cout << "[DEBUG] ... Trackers agreement: ";
+      CombinedLinks->print();
+      cout << endl;
+    }
+
+    /* Store the links for the current cluster */
+    FramesMatrix[frame1][frame2].OneWay->add( CombinedLinks );
   }
 
   if (Verbose)
   {
-    cout << "+ 1-way correlation from trace " << trace1+1 << " to " << trace2+1 << ":" << endl << endl;
-    for (int i=0; i<ResultingMatch.size(); i++)
-    {
-      ResultingMatch[i]->print();
-    }
+    cout << "+ 1-way links from frame " << frame1+1 << " to " << frame2+1 << ":" << endl << endl;
+    FramesMatrix[frame1][frame2].OneWay->print();
     cout << endl;
   }
 }
- 
-// void Tracking::GeneratePlots()
-// {
-//   cout << "+ Generating plots...\n";
-//   cout.flush();
-//   string CMD = "perl -I " + string(getenv("TRACKING_HOME")) + "/bin " + string(getenv("TRACKING_HOME")) + "/bin/generate-plots.pl ";
-//   for (int i=0; i<InputTraces.size(); i++)
-//   {
-//     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
-//     CMD += TraceBaseName + " ";
-//   }
-//   CMD += OutputPrefix;
-//   cout << CMD << endl;
-//   system(CMD.c_str());
-//   cout << "Plotting done!" << endl << endl;
-// }
 
 void Tracking::Recolor()
 {
@@ -511,8 +605,11 @@ void Tracking::Recolor()
     CMD += InPlots[i] + " ";
   }
   CMD += OutputPrefix;
-  /* cout << "[DEBUG] CMD=" << CMD << endl; */
   cout << "+ Recoloring plots... " << endl; cout.flush();
+  if (Verbose > 1)
+  {
+    cout << "[DEBUG] CMD=" << CMD << endl;
+  }
   system(CMD.c_str());
   cout << endl;
 }
@@ -531,4 +628,22 @@ void Tracking::ReconstructTraces()
 
   TraceReconstructor *TR = new TraceReconstructor( InputTraces, OutputTraces, AllTranslationTables );
 }
+
+#if 0
+// void Tracking::GeneratePlots()
+// {
+//   cout << "+ Generating plots...\n";
+//   cout.flush();
+//   string CMD = "perl -I " + string(getenv("TRACKING_HOME")) + "/bin " + string(getenv("TRACKING_HOME")) + "/bin/generate-plots.pl ";
+//   for (int i=0; i<InputTraces.size(); i++)
+//   {
+//     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
+//     CMD += TraceBaseName + " ";
+//   }
+//   CMD += OutputPrefix;
+//   cout << CMD << endl;
+//   system(CMD.c_str());
+//   cout << "Plotting done!" << endl << endl;
+// }
+#endif 
 

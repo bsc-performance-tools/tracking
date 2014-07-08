@@ -55,7 +55,7 @@ sub PrintUsage
   print "  -r    Enable the trace reconstruction with tracked clusters.\n";
   print "  -t THRESHOLD\n";
   print "        Minimum likeliness percentage in order to match two clusters (special values: all | first).\n";
-  print "  -v    Run in verbose mode.\n";
+  print "  -v[v] Run in verbose mode (-vv for extra debug messages).\n";
   print "  -x CLUSTERING_CONFIG_XML\n";
   print "        Specify the clustering configuration to automatically cluster the traces.\n";
   print "\n";
@@ -186,6 +186,10 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
     case "v"
     {
       $Verbose = 1;
+      if (substr($ARGV[$i], 2, 1) eq 'v')
+      {
+        $Verbose ++;
+      }
     }
     case "x"
     {
@@ -504,6 +508,10 @@ if ($Verbose == 1)
 {
   $CMD .= "-v ";
 }
+if ($Verbose == 2)
+{
+  $CMD .= "-vv ";
+}
 if ($OutputPrefix ne "")
 {
   $CMD .= "-o $OutputPrefix ";
@@ -513,7 +521,6 @@ for ($i=0; $i<@InputTraces; $i++)
 {
   # This appends the last cluster to process per trace according to the percentage of time they represent
   $CMD .= $InputTraces[$i].":".$LastClustersToProcess[$i]." ";
-  #$CMD .= $InputTraces[$i]." ";
 }
 
 system($CMD);

@@ -12,7 +12,7 @@ using std::endl;
  * build a cluster correlation by cross-classification, where the number of points  
  * considered is the same for two clusterings, thus the size of the input vector is the same.
  */ 
-CorrelationMatrix::CorrelationMatrix(vector<CID> list_ids_1, vector<CID> list_ids_2)
+CorrelationMatrix::CorrelationMatrix(vector<ClusterID_t> list_ids_1, vector<ClusterID_t> list_ids_2)
 {
   ApplyOffset = false;
   N = M = 0;
@@ -176,12 +176,16 @@ void CorrelationMatrix::Stats()
 
     if (CorrelatesInto > 0)
     {
-      fprintf(stdout, "Cluster %d correlates to %d cluster%s\n", CLUSTER_ID(i), CorrelatesInto, (CorrelatesInto > 1 ? "s" : ""));
+      fprintf(stdout, " ▄ Cluster %d matches to %d cluster%s\n", CLUSTER_ID(i), CorrelatesInto, (CorrelatesInto > 1 ? "s" : ""));
       for (int j=0; j<M; j++)
       {
         if (getCorrelationSeenCount(i, j) > 0)
-        fprintf(stdout, " * %.2f%% into cluster %d (hits=%d)\n", Matrix[i][j].Likeliness, CLUSTER_ID(j), Matrix[i][j].SeenCount);
+        fprintf(stdout, " └─ %.2f%% into cluster %d (hits=%d)\n", Matrix[i][j].Likeliness, CLUSTER_ID(j), Matrix[i][j].SeenCount);
       }
+    }
+    else
+    {
+      fprintf(stdout, " ░ Cluster %d did not match to anybody\n", CLUSTER_ID(i));
     }
   }
   fprintf(stdout, "\n");
@@ -191,9 +195,40 @@ void CorrelationMatrix::Stats()
  * If min_likeliness is set to -1, it returns the correlation with maximum percentage. Otherwise,
  * it returns all correlations above the specified percentage. 
  */
-Link * CorrelationMatrix::getCorrelation(int cluster_id, double min_likeliness)
+
+DoubleLinks * CorrelationMatrix::getCorrelations(double min_likeness)
 {
-  Link *ClusterCorrelation = new Link(cluster_id);
+  int i, j;
+
+  ObjectLinks *L = NULL;
+  FrameLinks *ForwardLinks = new FrameLinks();
+  FrameLinks *BackwardLinks = new FrameLinks();
+
+  for (i=FIRST_CLUSTER; i<N; i++)
+  {
+    L = getCorrelation(CLUSTER_ID(i), min_likeness);
+    if (L->size() > 0)
+      ForwardLinks->add( L );
+  }
+
+  for (j=FIRST_CLUSTER; j<M; j++)
+  {
+    L = getReverseCorrelation(CLUSTER_ID(j), min_likeness);
+    if (L->size() > 0)
+      BackwardLinks->add( L );
+  }
+
+  DoubleLinks *DL = new DoubleLinks( ForwardLinks, BackwardLinks );
+  
+  delete ForwardLinks;
+  delete BackwardLinks;
+  return DL;
+}
+
+
+ObjectLinks * CorrelationMatrix::getCorrelation(int cluster_id, double min_likeliness)
+{
+  ObjectLinks *ClusterCorrelation = new ObjectLinks(cluster_id);
 
   int i = cluster_id - 1 + FIRST_CLUSTER;
 
@@ -204,7 +239,7 @@ Link * CorrelationMatrix::getCorrelation(int cluster_id, double min_likeliness)
     /* This shouldn't happen, except in the case of correlations built from sequence simultaneity, where the maximum number of clusters is 22 */
   }
 
-  CID MaxCluster;
+  ClusterID_t MaxCluster;
   double max_percentage = -1;
   for (int j=FIRST_CLUSTER; j<M; j++)
   {
@@ -236,6 +271,144 @@ Link * CorrelationMatrix::getCorrelation(int cluster_id, double min_likeliness)
 }
 
 
+#if 0
+Link * CorrelationMatrix::getCorrelation(int cluster_id, double min_likeliness)
+{
+  Link *ClusterCorrelation = new Link(cluster_id);
+
+  int i = cluster_id - 1 + FIRST_CLUSTER;
+
+  if (i >= N) 
+  {
+    cout << "WARNING: No correlations for Cluster " << cluster_id << " were found!" << endl; 
+    return ClusterCorrelation; 
+    /* This shouldn't happen, except in the case of correlations built from sequence simultaneity, where the maximum number of clusters is 22 */
+  }
+
+  ClusterID_t MaxCluster;
+  double max_percentage = -1;
+  for (int j=FIRST_CLUSTER; j<M; j++)
+  {
+    if ((getCorrelationSeenCount(i, j) > 0) && (getCorrelationLikeliness(i, j) >= min_likeliness))
+    {
+      if (min_likeliness == -1)
+      {
+        /* Look for the correlation with maximum percentage only */
+        if (getCorrelationLikeliness(i, j) > max_percentage)
+        { 
+          max_percentage = getCorrelationLikeliness(i, j);
+          MaxCluster    = j;
+        }
+      }
+      else
+      {
+        /* Return all correlations above the percentage */
+        ClusterCorrelation->add(CLUSTER_ID(j));
+      }
+    }
+  }
+  if ((min_likeliness == -1) && (max_percentage > -1))
+  {
+    /* Return the correlation with maximum percentage only */
+    ClusterCorrelation->add(CLUSTER_ID(MaxCluster));
+  }
+
+  return ClusterCorrelation;
+}
+#endif
+
+
+ObjectLinks * CorrelationMatrix::getReverseCorrelation(int cluster_id, double min_likeliness)
+{
+  ObjectLinks *ClusterCorrelation = new ObjectLinks(cluster_id);
+
+  int j = cluster_id - 1 + FIRST_CLUSTER;
+
+  if (j >= M)
+  {
+    cout << "WARNING: No correlations for Cluster " << cluster_id << " were found!" << endl;
+    return ClusterCorrelation;
+    /* This shouldn't happen, except in the case of correlations built from sequence simultaneity, where the maximum number of clusters is 22 */
+  }
+
+  ClusterID_t MaxCluster;
+  double max_percentage = -1;
+  for (int i=FIRST_CLUSTER; i<N; i++)
+  {
+    if ((getCorrelationSeenCount(i, j) > 0) && (getCorrelationLikeliness(i, j) >= min_likeliness))
+    {
+      if (min_likeliness == -1)
+      {
+        /* Look for the correlation with maximum percentage only */
+        if (getCorrelationLikeliness(i, j) > max_percentage)
+        {
+          max_percentage = getCorrelationLikeliness(i, j);
+          MaxCluster    = i;
+        }
+      }
+      else
+      {
+        /* Return all correlations above the percentage */
+        ClusterCorrelation->add(CLUSTER_ID(i));
+      }
+    }
+  }
+  if ((min_likeliness == -1) && (max_percentage > -1))
+  {
+    /* Return the correlation with maximum percentage only */
+    ClusterCorrelation->add(CLUSTER_ID(MaxCluster));
+  }
+
+  return ClusterCorrelation;
+}
+
+#if 0
+Link * CorrelationMatrix::getReverseCorrelation(int cluster_id, double min_likeliness)
+{
+  Link *ClusterCorrelation = new Link(cluster_id);
+
+  int j = cluster_id - 1 + FIRST_CLUSTER;
+
+  if (j >= M)
+  {
+    cout << "WARNING: No correlations for Cluster " << cluster_id << " were found!" << endl;
+    return ClusterCorrelation;
+    /* This shouldn't happen, except in the case of correlations built from sequence simultaneity, where the maximum number of clusters is 22 */
+  }
+
+  ClusterID_t MaxCluster;
+  double max_percentage = -1;
+  for (int i=FIRST_CLUSTER; i<N; i++)
+  {
+    if ((getCorrelationSeenCount(i, j) > 0) && (getCorrelationLikeliness(i, j) >= min_likeliness))
+    {
+      if (min_likeliness == -1)
+      {
+        /* Look for the correlation with maximum percentage only */
+        if (getCorrelationLikeliness(i, j) > max_percentage)
+        {
+          max_percentage = getCorrelationLikeliness(i, j);
+          MaxCluster    = i;
+        }
+      }
+      else
+      {
+        /* Return all correlations above the percentage */
+        ClusterCorrelation->add(CLUSTER_ID(i));
+      }
+    }
+  }
+  if ((min_likeliness == -1) && (max_percentage > -1))
+  {
+    /* Return the correlation with maximum percentage only */
+    ClusterCorrelation->add(CLUSTER_ID(MaxCluster));
+  }
+
+  return ClusterCorrelation;
+}
+#endif
+
+
 
 int CorrelationMatrix::getCorrelationSeenCount(int fromCluster, int toCluster)
 {
@@ -252,3 +425,68 @@ int CorrelationMatrix::getNumberOfClusters()
   return N-FIRST_CLUSTER;
 }
 
+
+
+ObjectLinks * CorrelationMatrix::getLinks(int cluster_id, double min_likeliness)
+{
+  ObjectLinks *links = new ObjectLinks( cluster_id );
+
+  int i = cluster_id - 1 + FIRST_CLUSTER;
+
+  if (i >= N)
+  {
+    cout << "WARNING: No correlations for Cluster " << cluster_id << " were found!" << endl;
+    /* This shouldn't happen, except in the case of correlations built from sequence simultaneity, where the maximum number of clusters is 22 */
+  }
+  else
+  {
+    ClusterID_t MaxCluster;
+    double max_percentage = -1;
+    for (int j=FIRST_CLUSTER; j<M; j++)
+    {
+      if ((getCorrelationSeenCount(i, j) > 0) && (getCorrelationLikeliness(i, j) >= min_likeliness))
+      {
+        if (min_likeliness == -1)
+        {
+          /* Look for the correlation with maximum percentage only */
+          if (getCorrelationLikeliness(i, j) > max_percentage)
+          {
+            max_percentage = getCorrelationLikeliness(i, j);
+            MaxCluster    = j;
+          }
+        }
+        else
+        {
+          /* Return all correlations above the percentage */
+          links->add( CLUSTER_ID(j) );
+        }
+      }
+    }
+    if ((min_likeliness == -1) && (max_percentage > -1))
+    {
+      /* Return the correlation with maximum percentage only */
+      links->add( CLUSTER_ID(MaxCluster) );
+    }
+  }
+  return links;
+}
+
+#if 1
+FrameLinks * CorrelationMatrix::getLinks( double min_likeliness )
+{
+  FrameLinks *Links = new FrameLinks();
+
+  for (int FromCluster = FIRST_CLUSTER; FromCluster < N; FromCluster ++)
+  {
+    ObjectLinks *ToClusters;
+
+    ToClusters = getLinks( FromCluster, min_likeliness );
+
+    if (ToClusters->size() > 0)
+    {
+      Links->add( ToClusters );
+    }
+  }
+  return Links;
+}
+#endif

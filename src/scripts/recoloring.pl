@@ -5,8 +5,17 @@ my $SEQUENCE_FILE_SUFFIX       = ".SEQUENCES";
 my $RECOLORED_PLOT_SUFFIX      = ".recolored.plot";
 my $RECOLORED_DATA_SUFFIX      = ".recolored.data";
 my $RECOLORED_MULTIPLOT_SUFFIX = ".recolored.multiplot";
-my $PARAVER_OFFSET        = 5;
-my $NOISE                 = 0;
+my $TO_PNG_SUFFIX              = ".topng";
+my $PARAVER_OFFSET             = 5;
+my $CLUSTER_NOISE              = 0;
+my $CLUSTER_THRESHOLD_FILTERED = -1;
+
+my $SECTION_INFO          = "[Info]";
+my $SECTION_TRACKED       = "[Tracked]";
+my $SECTION_FILTERED      = "[Filtered]";
+my $SECTION_UNTRACKED     = "[Untracked]";
+my $VAR_FRAMES            = "Frames";
+my $VAR_OBJECTS           = "Objects";
 
 # Parse arguments
 my $ARGC             = @ARGV;
@@ -20,36 +29,81 @@ my @RecoloredPlotArray = ();
 my $SEQUENCE_FILE = $OUT_PREFIX.$SEQUENCE_FILE_SUFFIX;
 open (FD, $SEQUENCE_FILE) || die "Could not open '$SEQUENCE_FILE': $!\n";
 my $CurrentCluster = 1;
-while ($Sequence = <FD>)
+
+my $NumFrames  = 0;
+my $NumObjects = 0;
+
+do
 {
-  chomp $Sequence;
+  $Line = <FD>;
+  chomp $Line;
 
-  @SequenceTokens = split(/\s+<->\s+/, $Sequence);
-
-  my $StepsInSequence = @SequenceTokens;
-  if ($StepsInSequence != $NUM_INPUT_PLOTS)
+  if ((substr($Line, 0, 1) eq "[") && (substr($Line, -1, 1) eq "]"))
   {
-    print "ERROR: Number of input plots (".$NUM_INPUT_PLOTS.") differs from the number of experiments in the cluster sequence (".$StepsInSequence.")\n";
-    exit;
+    $CurrentSection = $Line;
   }
-
-  for (my $Step = 0; $Step < $StepsInSequence; $Step++)
+  elsif ((length($Line) > 0) && (index($Line, '=') != -1))
   {
-    my $ClusterSet = $SequenceTokens[$Step];
-
-    @ClusterSetArray = split(/,/, $ClusterSet);
-    for (my $i = 0; $i < @ClusterSetArray; $i++)
+    my @Tokens = split('=', $Line);
+    my $Var    = $Tokens[0];
+    my $Value  = $Tokens[1];
+    
+    if ($Var eq $VAR_FRAMES)
     {
-      $ColorTranslation{$Step}{$ClusterSetArray[$i]} = $CurrentCluster;
+      $NumFrames = $Value;
     }
-#    $ColorTranslation{$Step}{$NOISE} = $NOISE;
+    elsif ($Var eq $VAR_OBJECTS)
+    {
+      $NumObjects = $Value;
+      if ($CurrentSection eq $SECTION_TRACKED)
+      {
+        $NUM_CLUSTERS = $NumObjects;
+      }
+    }
+    else 
+    {
+      my $Object = $Var;
+      my $Links  = $Value;
+
+      my @LinksTokens = split(/;/, $Links);
+      my $FramesInLinks = @LinksTokens;
+      if ($FramesInLinks != $NUM_INPUT_PLOTS)
+      {
+        print "ERROR: Number of input plots (".$NUM_INPUT_PLOTS.") differs from the number of experiments in the cluster sequence (".$FramesInLinks.")\n";
+        exit;
+      }
+
+      if ($CurrentSection eq $SECTION_TRACKED)
+      {
+        $CurrentCluster = $Object;
+      }
+      elsif ($CurrentSection eq $SECTION_FILTERED)
+      {
+        $CurrentCluster = $CLUSTER_THRESHOLD_FILTERED;
+      }
+      elsif ($CurrentSection eq $SECTION_UNTRACKED)
+      {
+        $CurrentCluster = $CLUSTER_NOISE;
+      }
+
+      for (my $CurrentFrame = 0; $CurrentFrame < $FramesInLinks; $CurrentFrame++)
+      {
+        my $ClusterSet = $LinksTokens[$CurrentFrame];
+   
+        @ClusterSetArray = split(/,/, $ClusterSet);
+        for (my $i = 0; $i < @ClusterSetArray; $i++)
+        {
+          $ColorTranslation{$CurrentFrame}{$ClusterSetArray[$i]} = $CurrentCluster;
+        }
+        $ColorTranslation{$CurrentFrame}{$CLUSTER_NOISE} = $CLUSTER_NOISE;
+      }
+    }
   }
-  $CurrentCluster ++;
-}
-$NUM_CLUSTERS = $CurrentCluster - 1;
+} until eof;
+
 close FD;
 
-print "Recoloring $NUM_CLUSTERS clusters in ".$NUM_INPUT_PLOTS." plots...\n";
+print "Recoloring clusters in ".$NUM_INPUT_PLOTS." plots...\n";
 
 for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
   my $IN_PLOT = $ARGV[$Step];
@@ -61,7 +115,10 @@ for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
   print "Generating GNUplot script from template '$IN_PLOT'\n";
   open IN,  "$IN_PLOT" || die "Could not open '$IN_PLOT': $!\n";
   my $OUT_PLOT = $IN_PLOT.$RECOLORED_PLOT_SUFFIX;
+  my $TO_PNG_SCRIPT = $OUT_PLOT.$TO_PNG_SUFFIX;
   open OUT, ">$OUT_PLOT" || die "Could not open '$OUT_PLOT': $!\n";
+  open TOPNG, ">$TO_PNG_SCRIPT" || die "Could not open '$TO_PNG_SCRIPT': $!\n";
+
   push(@RecoloredPlotArray, $OUT_PLOT);
 
   my $ORIGINAL_DATA_FILE="";
@@ -78,22 +135,33 @@ for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
       $RECOLORED_DATA_FILE = $ORIGINAL_DATA_FILE.$RECOLORED_DATA_SUFFIX;
 
       print OUT "plot ";
+
+      print TOPNG "set notitle\n";
+      print TOPNG "set nokey\n";
+      print TOPNG "set nogrid\n";
+      print TOPNG "set noxlabel\n";
+      print TOPNG "set noylabel\n";
+      print TOPNG "set noxtics\n";
+      print TOPNG "set noytics\n";
+      print TOPNG "set terminal png size 100,100 enhanced font \"Helvetica,20\"\n";
+      print TOPNG "set output 'frame_".($Step+1).".png'\n";
+      print TOPNG "plot ";
 		
-#      if (grep /NOISE/, $Line)
-#      {
-#        $Line = <IN>; # Skip noise 
-#      }
-#      else
-#      {
-#        $Line = substr($Line, 5);
-#      }
+      if (grep /title \"Noise\"/, $Line)
+      {
+        $Line = <IN>; # Skip noise 
+      }
+      else
+      {
+        $Line = substr($Line, 5);
+      }
       $CountClusters = 0;
 
-      if (grep /NOISE/, $Line)
-      {
-        $CountClusters --;
-      }
-      $Line = substr($Line, 5);
+#      if (grep /title \"Noise\"/, $Line)
+#      {
+#        $CountClusters --;
+#      }
+#      $Line = substr($Line, 5);
 
       do
       {
@@ -106,20 +174,24 @@ for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
           chop $PlotArgs; chop $PlotArgs;
         }
         print OUT "'$RECOLORED_DATA_FILE' $PlotArgs\n";
+        print TOPNG "'$RECOLORED_DATA_FILE' $PlotArgs\n";
   
         $Line = <IN>;
         $CountClusters ++;
       } while ($CountClusters < $NUM_CLUSTERS);
       print OUT "pause -1 \"Hit return to continue...\"\n";
+
       last; # Breaks the loop
     }
     else
     {
       print OUT $Line;
+      print TOPNG $Line;
     }
   }
   close (IN);
   close (OUT);
+  close (TOPNG);
 
   open IN,  "$ORIGINAL_DATA_FILE" || die "Could not open '$ORIGINAL_DATA_FILE': $!\n";
   open OUT, ">$RECOLORED_DATA_FILE" || die "Could not open '$RECOLORED_DATA_FILE': $!\n";

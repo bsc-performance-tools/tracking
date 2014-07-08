@@ -7,9 +7,18 @@ using std::vector;
 using std::string;
 #include "ClusterIDs.h"
 #include "Links.h"
-#include "CorrelationMatrix.h"
+#include "CallersHistogram.h"
+#include "ClustersAlignment.h"
+#include "DistanceTracker.h"
 #include "CallersTracker.h"
 #include "SequenceTracker.h"
+#include "DensityTracker.h"
+#include "SPMDTracker.h"
+#include "ClustersInfo.h"
+
+#define DEFAULT_MIN_SCORE      0.90
+#define DEFAULT_CROSS_DISTANCE 1.00
+#define DEFAULT_THRESHOLD      15
 
 #define SUFFIX_ORIG_CSV                      ".DATA.csv"
 #define SUFFIX_NORM_CSV                      SUFFIX_ORIG_CSV".norm"
@@ -24,72 +33,77 @@ using std::string;
 
 class Tracking
 {
-public:
-  typedef struct
-  {
-    CorrelationMatrix *ByCross;
-    CorrelationMatrix *ByCallers;
-    DoubleLink        *PairedByMixer;
-    DoubleLink        *PairedBySequence;
-    DoubleLink        *PairedCombo;
-  } ClustersCorrelations_t;
+  public:
+    typedef struct
+    {
+      DistanceTracker  *ByDistance;
+      CallersTracker   *ByCallers;
+      SPMDTracker      *BySPMD;
+      SequenceTracker  *BySequence;
+      DensityTracker   *ByDensity;
+
+      FrameLinks *OneWay;
+      DoubleLinks *TwoWay;
+      DoubleLinks *Final;
+
+    } FramesMatrix_t;
   
-  Tracking(vector<string> traces, vector<CID> last_clusters, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, bool verbose);
-  ~Tracking();
+    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose);
+    ~Tracking();
 
-  void CorrelateTraces();
-  void BuildFinalSequence();
-  // void GeneratePlots();
-  void Recolor();
-  void ReconstructTraces();
+    void CorrelateTraces();
+    void BuildFinalSequence();
+    // void GeneratePlots();
+    void Recolor();
+    void ReconstructTraces();
 
-private:
-  int NumberOfTraces;
-  vector<string> InputTraces;
-  vector<string> OutputTraces;
-  vector<CID>    NumClustersToTrack;
-  vector<string> OrigCSVs;
-  vector<string> InputCSVs;
-  vector<string> InputCINFOs;
-  vector<int>    TotalClusters;
-  vector<string> InputAlignments;
-  vector<string> OutputHistoCallers;
-  ClustersCorrelations_t **TracesCorrelationMatrix;
+  private:
+    int NumberOfTraces;
+    vector<string> InputTraces;
+    vector<string> OutputTraces;
+    vector<ClusterID_t>    NumClustersToTrack;
+    vector<string> OrigCSVs;
+    vector<string> InputCSVs;
+    vector<string> InputCINFOs;
+    vector<int>    TotalClusters;
+    vector<string> InputAlignments;
+    vector<string> OutputHistoCallers;
+    FramesMatrix_t **FramesMatrix;
+    vector<ClustersInfo *> ClustersInfoData;
 
-  SequenceLink *FinalSequence;
+    SequenceLink *FinalSequence;
+
+    vector<ClustersAlignment *> Alignments;
+    vector<CallersHistogram  *> Histograms;
   
-  double Epsilon;
-  double CrossDistance;
-  double MinimumScore;
-  double Threshold;
-  string CallersCFG;
-  string OutputPrefix;
-  bool UseCallers;
-  bool UseAlignment;
-  bool UseCrossClassify;
-  bool Verbose;
-  bool Reconstruct;
-  string OutputSequenceFile;
+    double Epsilon;
+    double CrossDistance;
+    double MinimumScore;
+    double Threshold;
+    string CallersCFG;
+    string OutputPrefix;
+    bool UseCallers;
+    bool UseSequence;
+    bool UseSPMDiness;
+    bool UseDistance;
+    bool UseDensity;
+    bool UseAlignment;
+    int  Verbose;
+    bool Reconstruct;
+    set<string> TrackersAppliedAtRound1;
+    string OutputSequenceFile;
+    double TimeThresholdAfter;
 
-  void PrepareFileNames();
-  CorrelationMatrix * TrackByCrossClassify(int trace1, int trace2);
-  CorrelationMatrix * TrackByCallers      (int trace1, int trace2, vector<Histo3D *> &H3Ds);
-  CorrelationMatrix * TrackBySequence     (int trace1, int trace2);
+    void PrepareFileNames();
+    void CompareFrames(int frame1, int frame2);
+    void RunTrackers1();
+    void RunTrackers2();
+    void CombineTrackers1();
+    void CombineTrackers2();
 
-  void Mix(
-    int trace1, 
-    int trace2, 
-    vector<SequenceTracker *>          &STs,
-    vector<CorrelationMatrix *> &BySimultaneity,
-    vector<Link *>        &ResultingMatch);
-
-  void PrintCorrelations(CID ClusterID, TClustersSet &ClusterCorrelations);
+    void PrintCorrelations(ClusterID_t ClusterID, ObjectSet_t &ClusterCorrelations);
 
 };
-
-#define DEFAULT_MIN_SCORE      0.90
-#define DEFAULT_CROSS_DISTANCE 1.00
-#define DEFAULT_THRESHOLD      15
 
 #define HELP \
 "\n"\
@@ -114,7 +128,7 @@ private:
 "\n"\
 "  -t <threshold>             Minimum likeliness percentage in order to match two clusters\n"\
 "\n"\
-"  -v                         Run in verbose mode\n"\
+"  -v[v]                      Run in verbose mode (-vv for extra debug messages)\n"\
 "\n"\
 
 #endif /* __TRACKING_H__ */

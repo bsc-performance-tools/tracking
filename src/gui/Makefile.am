@@ -9,7 +9,7 @@ ICONS_DIR    = icons
 
 PARAVER_CFGS = clusterid.cfg
 
-#bin_SCRIPTS = convexhull.py
+bin_SCRIPTS = callers_frame.py  data_manager.py  decorations.py  plotting_manager.py
 
 EXTRA_DIST =               \
   $(GUI_LAUNCHER_TEMPLATE) \

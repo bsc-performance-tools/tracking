@@ -17,7 +17,7 @@ using std::istringstream;
 string CallersCFG     = "";
 bool   CallersCFGRead = false;
 bool   Reconstruct    = false;
-bool   Verbose        = false;
+int    Verbose        = 0;
 string OutputPrefix   = "";
 double MinimumScore   = DEFAULT_MIN_SCORE;
 double CrossDistance  = DEFAULT_CROSS_DISTANCE;
@@ -33,9 +33,7 @@ int ReadArgs(int argc, char *argv[])
 {
   int j = 1;
 
-  if (argc == 1 ||
-      argc == 2 &&
-      ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)))
+  if (((argc == 1) || (argc == 2)) && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)))
   {
 
     fprintf(stdout, HELP, basename(argv[0]));
@@ -79,7 +77,11 @@ int ReadArgs(int argc, char *argv[])
           Threshold = atof(argv[j]);
           break;
         case 'v':
-          Verbose = true;
+          Verbose ++;
+          if ((strlen(argv[j]) > 2) && (argv[j][2] == 'v'))
+          {
+            Verbose ++;
+          }
           break;
         default:
           cerr << "*** INVALID PARAMETER " << argv[j][1] << " *** " << endl << endl;
@@ -98,7 +100,7 @@ int ReadArgs(int argc, char *argv[])
 int main(int argc, char **argv)
 {
   vector<string> TracesArray;
-  vector<CID>    NumClustersToTrack;
+  vector<ClusterID_t>    NumClustersToTrack;
 
   int FirstTraceArg = ReadArgs(argc, argv);
 
@@ -108,7 +110,7 @@ int main(int argc, char **argv)
 
     string CurrentTrace           = CurrentArg.substr( 0, CurrentArg.find(":") );
     string strLastClusterForTrace = CurrentArg.substr( CurrentArg.find(":") + 1 );
-    CID    LastClusterForTrace;
+    ClusterID_t    LastClusterForTrace;
 
     istringstream iss(strLastClusterForTrace);
 

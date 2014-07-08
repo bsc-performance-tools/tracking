@@ -6,7 +6,7 @@
 #########################
 
 # Initialize autoconf & define package name, version and bug-report address 
-AC_INIT(Tracking Tool, 2.51, tools@bsc.es)
+AC_INIT(Tracking Tool, 2.6, tools@bsc.es)
 
 # GNU Autotools intermediate files are stored in the following directory
 AC_CONFIG_AUX_DIR(config)
@@ -34,6 +34,8 @@ AC_PROG_CC(gcc cc xlc)
 AC_PROG_CXX(g++ CC xlC)
 AC_PROG_CPP
 AC_PROG_INSTALL
+CFLAGS="$CFLAGS -Wno-deprecated"
+CXXFLAGS="$CXXFLAGS -Wno-deprecated"
 
 # Automake 1.10 reports a problem if this is not defined
 AM_PROG_CC_C_O

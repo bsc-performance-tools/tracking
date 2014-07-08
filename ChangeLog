@@ -1,5 +1,12 @@
 ChangeLog 'Tracking Tool'
 
+2014-07-08 German Llort <german.llort@bsc.es>
+	+ Added new tracker based on density.
+	* Designed new GUI.
+	* Fixed several bugs.
+	* Major code refactoring.
+	* Upgraded version to 2.60
+
 2014-04-17 German Llort <german.llort@bsc.es>
 	+ Added arguments "-d" and "-t" to enable/disable the cross-classification heuristic and set a likeliness threshold
 	* Fixed bug allocating/freeing memory

@@ -1,89 +1,156 @@
 #ifndef __LINKS_H__
 #define __LINKS_H__
 
-#include <vector>
-using std::vector;
-using std::pair;
 #include <fstream>
-using std::ostream;
-#include <string>
-using std::string;
 #include <map>
-using std::map;
-#include "ClusterIDs.h"
+#include <string>
+#include <vector>
 #include <localkernel.h>
+#include "ClusterIDs.h"
+#include "ClustersInfo.h"
 
-void PrintClusterGroup( ostream & channel, TClustersSet &CG, string delim );
-int subset(TClustersSet &g1, TClustersSet &g2);
+using std::map;
+using std::ostream;
+using std::pair;
+using std::string;
+using std::vector;
 
+typedef ClusterID_t            ObjectID;
+typedef ClustersSet_t          ObjectSet_t;
+typedef ObjectSet_t::iterator ObjectSet_iterator_t;
+typedef ObjectSet_iterator_t  ObjectLinks_iterator_t;
+
+void print_objects_set( ostream & channel, ObjectSet_t &objects, string delim );
+int  subset( ObjectSet_t &set1, ObjectSet_t &set2 );
 
 /**
- * This class represents 1-way links of a single cluster to one or more clusters, e.g. 1 -> [ 1, 2 ]
+ * This class represents directional links of a single cluster to one or more clusters, e.g. 1 -> [ 1, 2 ]
  */
-class Link
+class ObjectLinks
 {
-public:
-  Link(Cluster cluster_id);
+  public:
+    ObjectLinks(ObjectID cluster_id);
+    ~ObjectLinks();
 
-  Cluster      get_Cluster(void);
-  TClustersSet get_Links(void);
+    void clear     (void);
+    int  size      (void);
+    void add       (ObjectID linked_cluster_id);
+    void print     (void);
+    void join      (ObjectLinks *object2);
+    void intersect (ObjectLinks *object2);
 
-  int  size     (void);
-  void add      (Cluster cluster_id);
-  void print    (void);
-  void join     (Link *another_link);
-  void intersect(Link *another_link);
-  TClustersSet::iterator begin(void);
-  TClustersSet::iterator end  (void);
+    ObjectID     get_object();
+    ObjectSet_t get_links();
+    
+    ObjectLinks_iterator_t begin(void);
+    ObjectLinks_iterator_t end(void);
 
-private:
-  Cluster      ClusterID;
-  TClustersSet LinkedWith;
+  private:
+    ObjectID     ObjectID;
+    ObjectSet_t Links;
 };
 
-typedef pair<TClustersSet, TClustersSet> TLinkedGroups;
+typedef map<ObjectID, ObjectSet_t> FrameLinks_t;
+typedef FrameLinks_t::iterator FrameLinks_iterator_t;
 
-class DoubleLink
+/**
+ * This class represents all directional links from the objects of a single frame to another frame
+ */
+class FrameLinks
 {
-public:
-  DoubleLink();
-  DoubleLink(vector<Link *> &ForwardCorrelation, vector<Link *> &BackwardCorrelation);
+  public:
+    FrameLinks();
+    ~FrameLinks();
 
- int size();
-  void print();
-  void add(TClustersSet LeftGroup, TClustersSet RightGroup);
-  void add(vector<TLinkedGroups> UnsortedGroups);
+    void add   (ObjectLinks *object_links);
+    void remove(ObjectID cluster_id);
+    void print (void);
+    void clear (void);
+    int  size  (void);
 
-  void Combine();
-  DoubleLink * Split(DoubleLink *Specialized);
-  vector<TLinkedGroups>::iterator begin();
-  vector<TLinkedGroups>::iterator end();
-  TClustersSet FindLink( TClustersSet &LeftGroup );
-  void GetUnique(map<CID, CID> &UniqueCorrelations);
+    ObjectSet_t get_links( ObjectID object_id );
 
-//private:
-  vector< TLinkedGroups > Links;
+    FrameLinks_iterator_t begin();
+    FrameLinks_iterator_t end();
+
+  private:
+    FrameLinks_t Links;
 };
 
+typedef vector< pair<ObjectSet_t, ObjectSet_t> > DoubleLinks_t;
+typedef DoubleLinks_t::iterator DoubleLinks_iterator_t;
+
+/**
+ * This class represents bidirectional links between two frames
+ */
+class DoubleLinks
+{
+  public:
+    DoubleLinks (void);
+    DoubleLinks (FrameLinks *Forward, FrameLinks *Backward);
+    ~DoubleLinks(void);
+
+    int  size (void);
+    void add  (ObjectSet_t LeftGroup, ObjectSet_t RightGroup);
+    void print(void);
+
+    void Sort (void);
+    void Merge();
+    DoubleLinks * Split(DoubleLinks *Specialized);
+    DoubleLinks * Reverse();
+
+    DoubleLinks_iterator_t find( ObjectSet_t from );
+    DoubleLinks_iterator_t begin();
+    DoubleLinks_iterator_t end();
+
+    DoubleLinks *GetUnivocal();
+    ObjectSet_t GetFrom( DoubleLinks_iterator_t it );
+    ObjectSet_t GetTo( DoubleLinks_iterator_t it );
+    ObjectSet_t GetFrom( int index );
+    ObjectSet_t GetTo( int index );
+    ObjectSet_t get_links( ObjectSet_t );
+
+    ObjectSet_t FindLink( ObjectSet_t &LeftGroup );
+
+  private:
+    DoubleLinks_t Links;
+};
+
+typedef vector<ObjectSet_t>        ObjectSequence_t;
+typedef ObjectSequence_t::iterator ObjectSequence_iterator_t;
+typedef vector<ObjectSequence_t>   SequenceLink_t;
+typedef SequenceLink_t::iterator    SequenceLink_iterator_t;
+
+/**
+ * This class represents bidirectionall links across ALL frames
+ */
 class SequenceLink
 {
-public:
-  typedef vector<TClustersSet>    TClusterSequence;
-  typedef vector<TClusterSequence> TTraceSequence;
+  public:
+    SequenceLink(vector<DoubleLinks *> &AllPairs, vector<ClustersInfo *> &clusters_info_data, double time_threshold);
 
-  SequenceLink(vector<DoubleLink *> &AllPairs);
-  void write(ostream &Channel);
-  void write(ostream &Channel, TClusterSequence &Sequence, string Delimiter);
+    int  GetTranslationTable(int trace, int total_clusters, map< TTypeValuePair, TTypeValuePair > &TranslationTable);
 
-  int GetTranslationTable(int trace, int total_clusters, map< TTypeValuePair, TTypeValuePair > &TranslationTable);
+    void write(ostream &Channel, bool All, bool PrettyPrint);
 
-private:
+  private:
+    SequenceLink_t    TrackedObjects;
+    SequenceLink_t    FilteredObjects;
+    SequenceLink_t    UntrackedObjects;
+    bool              AtLeastOneUntracked;
+    double            TimeThreshold;
+    int               NumFrames;
 
-  TTraceSequence FinalSequence;
+    void ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs);
+    void Merge();
+    void Merge(int s1, int s2);
+    void FindUntracked();
+    void FilterByTime(double TimeThreshold);
+    void write(ostream &Channel, SequenceLink_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter);
+    void write(ostream &Channel, ObjectSequence_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter);
 
-  void UnifySequences();
-  void UnifySequences(int s1, int s2);
 
+    vector<ClustersInfo *> &ClustersInfoData;
 };
 
 #endif /* __LINKS_H__ */

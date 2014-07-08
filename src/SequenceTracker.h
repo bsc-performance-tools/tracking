@@ -1,38 +1,26 @@
 #ifndef __SEQUENCE_TRACKER_H__
 #define __SEQUENCE_TRACKER_H__
 
-#include <string>
-using std::string;
-#include "SequenceScoring.h"
+#include <map>
+#include "ClustersAlignment.h"
 #include "ClusterIDs.h"
-#include "CorrelationMatrix.h"
 #include "Links.h"
+#include "Tracker.h"
 
-class SequenceTracker
+using std::map;
+
+class SequenceTracker : public Tracker
 {
-public:
-  SequenceScoring *SS;
+  public:
+    SequenceTracker(ClustersAlignment *alignments_frame_1, ClustersAlignment *alignments_frame_2, DoubleLinks *univocal_links);
+    ~SequenceTracker();
 
-  SequenceTracker(string AlignFile, string CINFOFile);
-  ~SequenceTracker();
+    void RunTracker();
 
-  bool   isAvailable();
-  double getGlobalScore();
-  double getClusterScore(CID cluster_id);
-  int    getNumberOfClusters();
-  CorrelationMatrix * getClustersSimultaneity();
-  CorrelationMatrix * CorrelateWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
-  DoubleLink * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2);
-  DoubleLink * PairWithAnother(map<CID, CID> UniqueCorrelations, SequenceTracker *ST2, CID LastClusterTrace1, CID LastClusterTrace2);
-
-  void   dump();
-
-private:
-  double         GlobalScore;
-  vector<double> Scores;
-
-  int FilterSubsequence(TSequence Seq, CID LastCluster, TSequence &FilteredSeq);
-
+  private:
+    ClustersAlignment *AlignmentsFrame1;
+    ClustersAlignment *AlignmentsFrame2;
+    DoubleLinks       *UnivocalLinks;
 };
 
 #endif /* __SEQUENCE_TRACKER_H__ */

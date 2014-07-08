@@ -8,6 +8,7 @@ class ClassifyTool
 {
 public:
   ClassifyTool(ClusteringState *CS);
+
   void ClassifyPoints(
     int                 dims_per_point, 
     std::vector<double> all_dimensions, 

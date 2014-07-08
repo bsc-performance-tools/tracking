@@ -1,41 +1,53 @@
-#include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::ostream;
-#include <string>
-using std::string;
-using std::make_pair;
 #include <algorithm>
-#include "Links.h"
+#include <iostream>
+#include <string>
+
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::make_pair;
+using std::ostream;
+using std::string;
+
 #include "ClusterIDs.h"
+#include "Links.h"
 #include "TraceReconstructor.h"
 
-
-void PrintClusterGroup( ostream & channel, TClustersSet &CG, string delim )
+void print_objects_set( ostream & channel, ObjectSet_t &CG, string delim )
 {
-    TClustersSet::iterator it;
+  ObjectSet_t::iterator it;
 
-    int count = 0;
-    for (it=CG.begin(); it!=CG.end(); it++)
+  int count = 0;
+  for (it=CG.begin(); it!=CG.end(); it++)
+  {
+    channel << *it;
+    if (count < CG.size() - 1) 
     {
-        channel << *it;
-        if (count < CG.size() - 1) channel << delim;
-        count ++;
+      channel << delim;
     }
-    if (count == 0)
-    {
-      channel << "x";
-    }
+    count ++;
+  }
+  if (count == 0)
+  {
+    channel << "x";
+  }
 }
 
-int subset(TClustersSet &g1, TClustersSet &g2)
+int subset(ObjectSet_t &g1, ObjectSet_t &g2)
 {
-  TClustersSet *small, *big;
-  TClustersSet::iterator it;
+  ObjectSet_t         *small;
+  ObjectSet_t         *big;
+  ObjectSet_iterator_t it;
 
-  if (g1.size() <= g2.size()) small = &g1, big = &g2;
-  else small = &g2, big = &g1;
+  if (g1.size() <= g2.size()) 
+  {
+    small = &g1;
+    big   = &g2;
+  }
+  else {
+    small = &g2;
+    big   = &g1;
+  }
 
   for (it = small->begin(); it != small->end(); ++it)
   {
@@ -45,37 +57,49 @@ int subset(TClustersSet &g1, TClustersSet &g2)
   return ((g1.size() < g2.size()) ? 1 : 2);
 }
 
-/**
- * Constructor for a 1-way link, e.g. 1 -> [1, 2]
- */
-Link::Link(Cluster cluster_id)
+
+ObjectLinks::ObjectLinks(ClusterID_t cluster_id)
 {
-  ClusterID = cluster_id;
+  ObjectID = cluster_id;
+  clear();
 }
 
-/**
- * Returns how many clusters are connected to the current one
- */
-int Link::size(void)
+ObjectLinks::~ObjectLinks()
 {
-  return LinkedWith.size();
+  ObjectID = 0;
+  clear();
 }
 
-/**
- * Links a new cluster
- */
-void Link::add(Cluster cluster_id)
+void ObjectLinks::clear()
 {
-  LinkedWith.insert(cluster_id);
+  Links.clear();
 }
 
-/**
- * Prints the linked clusters
- */
-void Link::print(void)
+int ObjectLinks::size()
 {
-  cout << "Links for cluster " << ClusterID << " -> ";
-  PrintClusterGroup( cout, LinkedWith, ",");
+  return Links.size();
+}
+
+void ObjectLinks::add(ClusterID_t cluster_id)
+{
+  Links.insert(cluster_id);
+}
+
+
+ObjectLinks_iterator_t ObjectLinks::begin()
+{
+  return Links.begin();
+}
+
+ObjectLinks_iterator_t ObjectLinks::end()
+{
+  return Links.end();
+}
+
+void ObjectLinks::print()
+{
+  cout << ObjectID << " -> ";
+  print_objects_set( cout, Links, ", " );
   cout << endl;
 }
 
@@ -86,12 +110,12 @@ void Link::print(void)
  * --------------
  * 1 -> [1, 2, 3]
  */
-void Link::join(Link *another_link)
+void ObjectLinks::join(ObjectLinks *object2)
 {
-  TClustersSet::iterator it;
-  for (it=another_link->begin(); it!=another_link->end(); it++)
+  ObjectLinks_iterator_t it;
+  for (it = object2->begin(); it != object2->end(); ++ it)
   {
-    LinkedWith.insert( *it );
+    Links.insert( *it );
   }
 }
 
@@ -101,111 +125,168 @@ void Link::join(Link *another_link)
  * 1 -> [2, 3]
  * -----------
  * 1 -> [2]
+ * If current link is empty, does the union instead.
  */
-void Link::intersect(Link *another_link)
+void ObjectLinks::intersect(ObjectLinks *object2)
 {
-  TClustersSet intersection;
-  std::insert_iterator< TClustersSet > ii (intersection, intersection.begin());
+  if (size() > 0)
+  {
+    ObjectSet_t intersection;
+    std::insert_iterator< ObjectSet_t > ii (intersection, intersection.begin());
 
-  std::set_intersection(
-    LinkedWith.begin(), LinkedWith.end(),
-    another_link->begin(), another_link->end(),
-    ii);
+    std::set_intersection(
+      this->begin(), this->end(),
+      object2->begin(), object2->end(),
+      ii);
 
-  LinkedWith = intersection;
+    this->Links = intersection;
+  }
+  else
+  {
+    this->join( object2 );
+  }
 }
 
-/**
- * Returns an iterator pointing to the first linked cluster
- */
-TClustersSet::iterator Link::begin()
+ClusterID_t ObjectLinks::get_object()
 {
-  return LinkedWith.begin();
+  return ObjectID;
 }
 
-/**
- * Returns an iterator pointing to the element past the last linked cluster
- */
-TClustersSet::iterator Link::end()
+ObjectSet_t ObjectLinks::get_links()
 {
-  return LinkedWith.end();
+  return Links;
 }
 
-/**
- * Returns the current cluster identifier, e.g.
- * 1 -> [3, 4, 5]
- * --------------
- * Returns: 1
- */
-Cluster Link::get_Cluster()
+FrameLinks::FrameLinks()
 {
-  return ClusterID;
+  clear();
 }
 
-/**
- * Returns the set of clusters that are linked to the current one, e.g.
- * 1 -> 3, 4, 5
- * ------------------
- * Returns: [3, 4, 5]
- */
-TClustersSet Link::get_Links()
+FrameLinks::~FrameLinks()
 {
-  return LinkedWith;
+  clear();
 }
 
-/**
- * Assumes that the input vectors are ordered by the cluster number, so that first position in the 
- * array corresponds to the 1-way correlations of cluster 1 and so on
- */
-DoubleLink::DoubleLink(vector<Link *> &Forward, vector<Link *> &Backward)
+void FrameLinks::clear()
+{
+  Links.clear();
+}
+
+void FrameLinks::add( ObjectLinks *object_links )
+{
+  Links[ object_links->get_object() ] = object_links->get_links();
+}
+
+void FrameLinks::remove( ClusterID_t cluster_id )
+{
+  Links.erase( cluster_id );
+}
+
+void FrameLinks::print( )
+{
+  FrameLinks_t::iterator it;
+  for (it=Links.begin(); it!=Links.end(); ++it)
+  {
+    int from_cluster = it->first;
+    ObjectSet_t to_clusters = it->second;
+
+    cout << "   [ " << from_cluster << " -> ";
+    print_objects_set( cout, to_clusters, ", ");
+    cout << " ]" << endl;
+  }
+}
+
+int FrameLinks::size()
+{
+  return Links.size();
+}
+
+ObjectSet_t FrameLinks::get_links( ClusterID_t object_id )
+{
+  if (Links.find( object_id ) != Links.end())
+  {
+    return Links[object_id];
+  }
+  else
+  {
+    return ObjectSet_t();
+  }
+}
+
+FrameLinks_t::iterator FrameLinks::begin()
+{
+  return Links.begin();
+}
+
+FrameLinks_t::iterator FrameLinks::end()
+{
+  return Links.end();
+}
+
+DoubleLinks::DoubleLinks(FrameLinks *Frame1, FrameLinks *Frame2)
 {
   Links.clear();
 
-  for (unsigned int i=0; i<Forward.size(); i++)
+  FrameLinks_iterator_t it;
+  for (it = Frame1->begin(); it != Frame1->end(); ++ it)
   {
-    TClustersSet LeftGroup, RightGroup;
-    Cluster LeftClusterID = Forward[i]->get_Cluster();
+    ClusterID_t ObjAtFrame1, ObjAtFrame2;
+    ObjectSet_t ForwardLinks, BackwardLinks;
+    ObjectSet_t LeftGroup, RightGroup;
 
-    LeftGroup.insert( LeftClusterID );
-    RightGroup = Forward[i]->get_Links();
+    ObjAtFrame1  = it->first;
+    ForwardLinks = it->second;
 
-    TClustersSet::iterator it1, it2;
-    for (it1 = RightGroup.begin(); it1 != RightGroup.end(); it1 ++)
+    LeftGroup.insert( ObjAtFrame1 );
+    
+    ObjectLinks_iterator_t it2;
+    for (it2 = ForwardLinks.begin(); it2 != ForwardLinks.end(); ++ it2)
     {
-      Cluster RightClusterID = *it1;
-      if (RightClusterID <= Backward.size())
+      ObjAtFrame2 = *it2;
+      if (ObjAtFrame2 <= Frame2->size())
       {
-        for (it2 = Backward[RightClusterID-1]->begin(); it2 != Backward[RightClusterID-1]->end(); it2 ++)
+        BackwardLinks = Frame2->get_links( ObjAtFrame2 );
+
+        ObjectLinks_iterator_t it3;
+        for (it3 = BackwardLinks.begin(); it3 != BackwardLinks.end(); ++ it3 )
         {
-          LeftGroup.insert( *it2 );
+          ClusterID_t BackwardObjAtFrame1 = *it3;
+          LeftGroup.insert( BackwardObjAtFrame1 );
         }
       }
     }
 
-    for (unsigned int j=0; j<Backward.size(); j++)
+   FrameLinks_iterator_t it4;
+    for (it4 = Frame2->begin(); it4 != Frame2->end(); ++ it4 )
     {
-      Cluster RightClusterID = Backward[j]->get_Cluster();
-      TClustersSet BackwardCorrelatingClusters = Backward[j]->get_Links();
-      if (BackwardCorrelatingClusters.find( LeftClusterID ) != BackwardCorrelatingClusters.end())
+      ObjAtFrame2 = it4->first;
+      BackwardLinks = it4->second;
+
+      if (BackwardLinks.find( ObjAtFrame1 ) != BackwardLinks.end())
       {
-        RightGroup.insert( RightClusterID );
+        RightGroup.insert( ObjAtFrame2 );
       }
     }
+      
+    add( LeftGroup, RightGroup );
+  } 
 
-    add(LeftGroup, RightGroup);
-  }
+  Merge(); 
+}
 
-  Combine();
+DoubleLinks::~DoubleLinks()
+{
+  Links.clear();
 }
 
 /**
  * Splits the rules of the current correlation with the more specialized rules of the correlation given by parameter, and returns 
  * a new correlation object that contains more specific rules.
  */
-DoubleLink * DoubleLink::Split(DoubleLink *Specialized)
+DoubleLinks * DoubleLinks::Split(DoubleLinks *Specialized)
 {
 /*
-  cout << "[DEBUG] DoubleLink::Split ====================================================\n";
+  cout << "[DEBUG] DoubleLinks::Split ====================================================\n";
   cout << "RULES:\n";
   print();
   cout << "SPECIALIZED:\n";
@@ -213,37 +294,31 @@ DoubleLink * DoubleLink::Split(DoubleLink *Specialized)
   cout << "==============================================================================\n";
 */
 
-  DoubleLink * res = NULL;
-  res = new DoubleLink();
-
-  vector<TLinkedGroups>::iterator it;
-  vector<TLinkedGroups> tmp;
+  DoubleLinks *res = new DoubleLinks();
+  DoubleLinks_iterator_t it;
 
   for (it=begin(); it!=end(); ++it)
   {
-    TClustersSet Left, Right;
-    Left  = it->first;
-    Right = it->second;
-
-    vector<TLinkedGroups>::iterator it2;
+    ObjectSet_t Left  = GetFrom(it);
+    ObjectSet_t Right = GetTo(it);
 
     int over = 0;
     while (over < Specialized->size())
     {
-        int min_size = -1;
+        int min_size  = -1;
 	int min_index = -1;
-	int cur_count = 0;
+	int cur_count =  0;
       
+        DoubleLinks_iterator_t it2;
         for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
         {
-          int cur_size = 0;
-          TClustersSet Left2, Right2;
-          Left2  = it2->first;
-          Right2 = it2->second;
+          ObjectSet_t Left2    = Specialized->GetFrom(it2);
+          ObjectSet_t Right2   = Specialized->GetTo(it2);
+          int          cur_size = 0;
 
 	  if ((Left2.size() == 1) && ( Right2.size() == 1))
           {
-		min_size = 2;
+		min_size  = 2;
 		min_index = cur_count;
 		break;
           }
@@ -252,75 +327,59 @@ DoubleLink * DoubleLink::Split(DoubleLink *Specialized)
             cur_size = Left2.size() + Right2.size();
             if ((min_size == -1) || (cur_size > min_size))
 	    {
-		min_size = cur_size;
+		min_size  = cur_size;
 		min_index = cur_count;
 	    }
 	  }
 	  cur_count ++;
         }
 
-        TClustersSet Left2, Right2;
-	Left2  = Specialized->Links[min_index].first;
-	Right2 = Specialized->Links[min_index].second;
+        ObjectSet_t Left2, Right2;
+	Left2  = Specialized->GetFrom(min_index);
+	Right2 = Specialized->GetTo(min_index);
 
         if ( (subset(Left, Left2) == 2) ||(subset(Right, Right2) == 2) )
         {
-          TClustersSet SubstractLeft, SubstractRight;
+          ObjectSet_t SubstractLeft, SubstractRight;
+
           set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(),
             std::inserter(SubstractLeft, SubstractLeft.end()));
-          set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(),
+          
+	  set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(),
             std::inserter(SubstractRight, SubstractRight.end()));
-          Left = SubstractLeft;
+
+          Left  = SubstractLeft;
           Right = SubstractRight;
 
-          tmp.push_back( make_pair( Left2, Right2 ) );
+          res->add( Left2, Right2 );
         }
 	over++;
     }
-#if 0
-    for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
-    {
-      TClustersSet Left2, Right2;
-      Left2  = it2->first;
-      Right2 = it2->second;
-
-      if ( (subset(Left, Left2) == 2) ||(subset(Right, Right2) == 2) )
-      {
-        TClustersSet SubstractLeft, SubstractRight;
-        set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(), 
-          std::inserter(SubstractLeft, SubstractLeft.end()));
-        set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(), 
-          std::inserter(SubstractRight, SubstractRight.end()));
-        Left = SubstractLeft; 
-        Right = SubstractRight;
-	    
-        tmp.push_back( make_pair( Left2, Right2 ) );
-      }
-    }
-#endif
     if ((Left.size() > 0) || (Right.size() > 0))
     {
-      tmp.push_back( make_pair( Left, Right ) );
+      res->add( Left, Right );
     }
   }  
-  res->add(tmp);
 
-  res->Combine();
+  res->Sort();
+
+  res->Merge();
 
   return res;
 }
 
-DoubleLink::DoubleLink()
+DoubleLinks::DoubleLinks()
 {
   Links.clear();
 }
 
-int DoubleLink::size()
+int DoubleLinks::size()
 {
   return Links.size();
 }
 
-void DoubleLink::add(TClustersSet LeftGroup, TClustersSet RightGroup)
+
+void DoubleLinks::add(ObjectSet_t LeftGroup, ObjectSet_t RightGroup)
 {
   /* This loop checks for any pre-existing link with the same cluster groups, not to insert repeated links */
   for (int i=0; i<Links.size(); i++)
@@ -330,86 +389,113 @@ void DoubleLink::add(TClustersSet LeftGroup, TClustersSet RightGroup)
       return;
     }
   } 
-  TLinkedGroups p = make_pair(LeftGroup, RightGroup);
-  Links.push_back(p);
+  Links.push_back( make_pair( LeftGroup, RightGroup ) );
 }
 
-/* Sorts the given links by the lowest first cluster in the left set */
-void DoubleLink::add(vector<TLinkedGroups> Input)
+/* Sorts the given links by the lowest object ID in the left set */
+
+void DoubleLinks::Sort(void)
 {
-  vector<TLinkedGroups> UnsortedGroups = Input;
+  DoubleLinks_t Sorted;
+  DoubleLinks_t Unsorted = Links;
+  DoubleLinks_iterator_t it;
+  
+  print();
 
-  while (UnsortedGroups.size() > 0)
+  while (Unsorted.size() > 0)
   {
-    int i = 0;
-    int min_index = 0;
-    int min_cluster = -1;
-
-    for (i=0; i<UnsortedGroups.size(); i++)
+    ClusterID_t min_cluster = -1;
+    DoubleLinks_iterator_t min_index;
+    
+    for (it = Unsorted.begin(); it != Unsorted.end(); ++ it)
     {
-      TLinkedGroups CurrentLink;
-      CurrentLink = UnsortedGroups[i];
-      TClustersSet Left;
-      Left = CurrentLink.first;
-
+      ObjectSet_t Left = GetFrom( it );
+      print_objects_set(cerr, Left, ", " );
+      cerr << endl;
       if (Left.size() > 0)
       {
-        Cluster first_cluster = *(Left.begin());
-        if ((min_cluster < 0) || (first_cluster < min_cluster))
-        {
-          min_cluster = first_cluster;
-          min_index = i;
+        ObjectSet_iterator_t it2;
+        for (it2 = Left.begin(); it2 != Left.end(); ++ it2)
+        { 
+          ClusterID_t cluster_id = *it2;
+
+          if ((min_cluster < 0) || (cluster_id < min_cluster))
+          {
+            min_cluster = cluster_id;
+            min_index   = it;
+          }
         }
       }
+      else if (min_cluster < 0)
+      {
+        min_index = it;
+      }
     }
-    add(UnsortedGroups[min_index].first, UnsortedGroups[min_index].second);
-    UnsortedGroups.erase(UnsortedGroups.begin() + min_index);  
+    cerr << "Unsorted.size=" << Unsorted.size() << " min_cluster=" << min_cluster << endl;
+    Sorted.push_back( make_pair(GetFrom(min_index), GetTo(min_index)) );
+    cerr << "redone" << endl;
+
+    Unsorted.erase( min_index );
   }
+
+  Links = Sorted;
 }
 
-vector<TLinkedGroups>::iterator DoubleLink::begin()
+DoubleLinks_iterator_t DoubleLinks::begin()
 {
   return Links.begin();
 }
 
-vector<TLinkedGroups>::iterator DoubleLink::end()
+DoubleLinks_iterator_t DoubleLinks::end()
 {
   return Links.end();
 }
 
-void DoubleLink::print()
+void DoubleLinks::print()
 {
-  vector< TLinkedGroups >::iterator it;
+  DoubleLinks_iterator_t it;
 
   for (it = Links.begin(); it != Links.end(); it ++)
   {
-    TClustersSet LeftGroup, RightGroup;
+    ObjectSet_t LeftGroup, RightGroup;
     LeftGroup  = it->first;
     RightGroup = it->second;
 
-    PrintClusterGroup( cout, LeftGroup, "," );
+    cout << "   [ ";
+    print_objects_set( cout, LeftGroup, "," );
     cout << " <-> ";
-    PrintClusterGroup( cout, RightGroup, "," );
-
-    cout << endl;
+    print_objects_set( cout, RightGroup, "," );
+    cout << " ]" << endl;
   }
 }
 
-void DoubleLink::Combine()
+DoubleLinks * DoubleLinks::Reverse()
 {
-  vector< TLinkedGroups >::iterator it1, it2;
+  DoubleLinks *Reversed = new DoubleLinks();
+  DoubleLinks_iterator_t it;
+
+  for (it = begin(); it != end(); ++it)
+  {
+    Reversed->add(it->second, it->first);
+  }
+  return Reversed;
+}
+
+void DoubleLinks::Merge()
+{
+  DoubleLinks_iterator_t it1, it2;
 
   it1 = Links.begin();
   while (it1 != Links.end())
   {
-    TClustersSet LeftGroup1, RightGroup1;
-    TClustersSet LeftGroup2, RightGroup2;
+    ObjectSet_t LeftGroup1, RightGroup1;
+    ObjectSet_t LeftGroup2, RightGroup2;
 
     it2 = it1 + 1;
 
     while (it2 != Links.end())
     {
-      TClustersSet isecLeft, isecRight;
+      ObjectSet_t isecLeft, isecRight;
 
       LeftGroup1  = it1->first;
       RightGroup1 = it1->second;
@@ -417,13 +503,13 @@ void DoubleLink::Combine()
       RightGroup2 = it2->second;
        
       /* DEBUG 
-      PrintClusterGroup ( cout, LeftGroup1, "," );
+      print_objects_set ( cout, LeftGroup1, "," );
       cout << " vs ";
-      PrintClusterGroup ( cout, LeftGroup2, "," );
+      print_objects_set ( cout, LeftGroup2, "," );
       cout << " AND ";
-      PrintClusterGroup ( cout, RightGroup1, "," );
+      print_objects_set ( cout, RightGroup1, "," );
       cout << " vs ";
-      PrintClusterGroup ( cout, RightGroup2, "," ); 
+      print_objects_set ( cout, RightGroup2, "," ); 
       cout << endl; */
 
       set_intersection( LeftGroup1.begin(), LeftGroup1.end(), LeftGroup2.begin(), LeftGroup2.end(), inserter(isecLeft, isecLeft.begin()) );
@@ -450,15 +536,15 @@ void DoubleLink::Combine()
  * Return the right association in a correlation.
  * Example: (1,2) <-> (3,4) ... returns (3,4) for (1,2)
  */
-TClustersSet DoubleLink::FindLink(TClustersSet &LeftGroup)
+ObjectSet_t DoubleLinks::FindLink(ObjectSet_t &LeftGroup)
 {
-  vector< TLinkedGroups >::iterator it;
-  vector< vector< TLinkedGroups >::iterator > Candidates;
+  DoubleLinks_iterator_t it;
+  vector< DoubleLinks_iterator_t > Candidates;
   unsigned int CandidatesMaxSetSize = 0;
 
   for (it = begin(); it != end(); it ++)
   {
-    TClustersSet Left, Right;
+    ObjectSet_t Left, Right;
     Left  = it->first;
     Right = it->second;
 
@@ -468,7 +554,7 @@ TClustersSet DoubleLink::FindLink(TClustersSet &LeftGroup)
     }
     else
     {
-      TClustersSet isec;
+      ObjectSet_t isec;
       set_intersection( Left.begin(), Left.end(), LeftGroup.begin(), LeftGroup.end(), inserter(isec, isec.begin()) );
       if (isec.size() > 0)
       {
@@ -492,17 +578,17 @@ TClustersSet DoubleLink::FindLink(TClustersSet &LeftGroup)
     }
   }
 
-  TClustersSet CandidatesAdded;
+  ObjectSet_t CandidatesAdded;
 
   if (Candidates.size() > 1)
   {
     cerr << "Multiple links (" << Candidates.size() << ") for cluster group (";
-    PrintClusterGroup( cerr, LeftGroup, "," );
+    print_objects_set( cerr, LeftGroup, "," );
     cerr << ") : ";
     for (int i=0; i<Candidates.size(); i++)
     {
       cerr << "(";
-      PrintClusterGroup( cerr, Candidates[i]->second, "," );
+      print_objects_set( cerr, Candidates[i]->second, "," );
       cerr << ") ";
     }
     cerr << endl;
@@ -511,7 +597,7 @@ TClustersSet DoubleLink::FindLink(TClustersSet &LeftGroup)
     {
 //    if (Candidates[i]->first.size() == CandidatesMaxSetSize)
       {
-        TClustersSet::iterator it2;
+        ObjectSet_t::iterator it2;
         for (it2=Candidates[i]->second.begin(); it2!=Candidates[i]->second.end(); it2++)
         {
           CandidatesAdded.insert( *it2 );
@@ -527,42 +613,101 @@ TClustersSet DoubleLink::FindLink(TClustersSet &LeftGroup)
   return CandidatesAdded;
 }
 
-void DoubleLink::GetUnique(map<Cluster, Cluster> &UniqueCorrelations)
+DoubleLinks * DoubleLinks::GetUnivocal()
 {
-  vector< TLinkedGroups >::iterator it;
+  DoubleLinks *UnivocalLinks = new DoubleLinks();
+  DoubleLinks_iterator_t it;
 
-  for (it = Links.begin(); it != Links.end(); it ++)
+  for (it = begin(); it != end(); it ++)
   {
-    TClustersSet LeftGroup, RightGroup;
-    LeftGroup  = it->first;
-    RightGroup = it->second;
+    ObjectSet_t LeftGroup, RightGroup;
+    LeftGroup  = GetFrom(it);
+    RightGroup = GetTo(it);
     if ((LeftGroup.size() == 1) && (RightGroup.size() == 1))
     {
-      Cluster Left  = *(LeftGroup.begin());
-      Cluster Right = *(RightGroup.begin());
-
-      UniqueCorrelations[Left] = Right;
+      UnivocalLinks->add( LeftGroup, RightGroup );
     }
+  }
+  return UnivocalLinks;
+}
+
+DoubleLinks_iterator_t DoubleLinks::find( ObjectSet_t from )
+{
+  DoubleLinks_iterator_t it;
+
+  for (it = begin(); it != end(); ++ it)
+  {
+    if (GetFrom(it) == from)
+    {
+      return it;
+    }	    
+  }
+  return end();
+}
+
+ObjectSet_t DoubleLinks::GetFrom( DoubleLinks_iterator_t it )
+{
+  return it->first;
+}
+
+ObjectSet_t DoubleLinks::GetTo( DoubleLinks_iterator_t it )
+{
+  return it->second;
+}
+
+ObjectSet_t DoubleLinks::GetFrom( int index )
+{
+  if ((index >= Links.size()) || (index < 0))
+  {
+    return ObjectSet_t();
+  }
+  else
+  {
+    return Links[index].first;
   }
 }
 
-SequenceLink::SequenceLink(vector<DoubleLink *> &AllPairs)
+ObjectSet_t DoubleLinks::GetTo( int index )
+{
+  return Links[index].second;
+}
+
+
+ObjectSet_t DoubleLinks::get_links( ObjectSet_t from )
+{
+  DoubleLinks_iterator_t it = find(from);
+
+  if (it != end())
+  {
+    return GetTo(it);
+  }
+  else return ObjectSet_t();
+}
+
+SequenceLink::SequenceLink(vector<DoubleLinks *> &AllPairs, vector<ClustersInfo *> &clusters_info_data, double time_threshold) : ClustersInfoData(clusters_info_data)
+{
+  NumFrames     = clusters_info_data.size();
+  TimeThreshold = time_threshold;
+
+  ComputeGlobalSequences(AllPairs);
+}
+
+void SequenceLink::ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs)
 {
   int count = 0;
-  vector<TLinkedGroups>::iterator it;
+  DoubleLinks_iterator_t it;
+  AtLeastOneUntracked = false;
 
-  DoubleLink *First = AllPairs[0];
+  DoubleLinks *First = AllPairs[0];
 
-  First->print();
+  //First->print();
 
   for (it = First->begin(); it != First->end(); it ++)
   {
     count ++;
-    /* DEBUG */ 
-    cout << "SEQUENCE " << count << " ";
 
-    TClustersSet Left, Right, Next;
-    TClusterSequence CurrentSequence;
+    ObjectSet_t Left, Right, Next;
+    ObjectSequence_t CurrentSequence;
 
     Left  = it->first;
     Right = it->second;
@@ -573,70 +718,81 @@ SequenceLink::SequenceLink(vector<DoubleLink *> &AllPairs)
 
     Left = Right;
 
+    bool Lost = false;
     for (int i=1; i<AllPairs.size(); i++)
     {
       Next = AllPairs[i]->FindLink( Left );
       if (Next.size() == 0)
       {
-        cerr << endl << "*** TRACKER IS LOST! ***" << endl;
-        cerr << "Could not find the next correlation for cluster group (";
-        PrintClusterGroup( cerr, Left, "," );
-        cerr << ") at step " << i << endl << endl;
+        cerr << "*** TRACKER IS LOST! ***";
+        cerr << " at frame " << i+1 << ", object (";
+        print_objects_set( cerr, Left, "," );
+        cerr << ")" << endl << "              ";
 //        exit(EXIT_FAILURE);
+        Lost = true;
       }
       CurrentSequence.push_back(Next);
       Left = Next;
     }
-    FinalSequence.push_back(CurrentSequence);
+    if (!Lost)
+    {
+      TrackedObjects.push_back(CurrentSequence);
+    }
 
-    /* DEBUG */
-    write(cout, CurrentSequence, ",");
+    /* DEBUG 
+    cout << "   " << count << "=";
+    write(cout, CurrentSequence, "   ", ",", " <-> "); */
   }
-  UnifySequences();
+
+  write(cout, TrackedObjects, "   ", "+", " <-> ");
+  Merge();
+
+  FindUntracked();
+
+  FilterByTime(TimeThreshold);
 }
 
-void SequenceLink::UnifySequences(int s1, int s2)
+void SequenceLink::Merge(int s1, int s2)
 {
   /* Insert s2 elements in s1 */
-  for (int i=0; i<FinalSequence[s2].size(); i++)
+  for (int i=0; i<TrackedObjects[s2].size(); i++)
   {
-    TClustersSet CG = FinalSequence[s2][i];
-    TClustersSet::iterator it;
+    ObjectSet_t CG = TrackedObjects[s2][i];
+    ObjectSet_t::iterator it;
     for (it=CG.begin(); it!=CG.end(); it++)
     {
-      FinalSequence[s1][i].insert(*it);
+      TrackedObjects[s1][i].insert(*it);
     }
   }
   /* Delete s2 */
-  FinalSequence.erase(FinalSequence.begin() + s2);
+  TrackedObjects.erase(TrackedObjects.begin() + s2);
 }
 
-void SequenceLink::UnifySequences()
+void SequenceLink::Merge()
 {
-  int SequenceLength = FinalSequence[0].size();
+  int SequenceLength = TrackedObjects[0].size();
   int i=0, j=0, k=0;
 
-  while (i < FinalSequence.size())
+  cout << endl << "+ Merging sequences that share clusters..." << endl << endl;
+
+  while (i < TrackedObjects.size())
   {
     j = i+1;
-    while (j < FinalSequence.size())
+    while (j < TrackedObjects.size())
     {
       for (k=0; k<SequenceLength; k++)
       {
-#if 1
-        TClustersSet isec;
-        set_intersection( FinalSequence[i][k].begin(), FinalSequence[i][k].end(), FinalSequence[j][k].begin(), FinalSequence[j][k].end(), inserter(isec, isec.begin()) );
+        ObjectSet_t isec;
+
+        set_intersection( TrackedObjects[i][k].begin(), TrackedObjects[i][k].end(), TrackedObjects[j][k].begin(), TrackedObjects[j][k].end(), inserter(isec, isec.begin()) );
         if (isec.size() > 0)
-#else
-        if (FinalSequence[i][k] == FinalSequence[j][k])
-#endif
         {
           /* DEBUG 
-          cout << "Unify sequence " << i+1 << " and " << j+1 << " (column " << k+1 << ")   ";
-          PrintClusterGroup( cout, FinalSequence[i][k], "," );
+          cout << "Merging sequence " << i+1 << " and " << j+1 << " (column " << k+1 << ")   ";
+          print_objects_set( cout, TrackedObjects[i][k], "," );
           cout << endl; */
 
-          UnifySequences(i, j);
+          Merge(i, j);
 
           j --;
           break;
@@ -648,32 +804,176 @@ void SequenceLink::UnifySequences()
   }
 
   /* DEBUG */
-  cout << endl << "+ Unifying sequences that share clusters..." << endl << endl;
-  write(cout);
-  cout << endl;
+  write(cout, TrackedObjects, "   ", "+", " <-> ");
 }
 
-void SequenceLink::write(ostream &Channel)
+void SequenceLink::FindUntracked()
 {
-  for (int i=0; i<FinalSequence.size(); i++)
+  int NumFrames = ClustersInfoData.size();
+  int NumTrackedObjects = TrackedObjects.size();
+  ObjectSequence_t tmp;
+
+  cout << "+ Filtering untracked objects..." << endl << endl;
+
+  for (int Frame = 0; Frame < NumFrames; Frame ++)
   {
-    TClusterSequence CurrentSequence = FinalSequence[i];
-    for (int j=0; j<CurrentSequence.size(); j++)
+    int NumUntrackedObjectsPerFrame = ClustersInfoData[Frame]->GetNumClusters() - NumTrackedObjects;
+
+    if (NumUntrackedObjectsPerFrame > 0)
     {
-      PrintClusterGroup( Channel, CurrentSequence[j], "," );
-      if (j < CurrentSequence.size()-1) Channel << " <-> ";
-      else Channel << endl;
+      ObjectSet_t Tracked;
+      ObjectSet_t Untracked;
+
+      for (int CurrentObjectID = 0; CurrentObjectID < NumTrackedObjects; CurrentObjectID ++)
+      {
+	ObjectSet_t CurrentObject = TrackedObjects[CurrentObjectID][Frame];
+        ObjectSet_iterator_t it;
+
+        for (it = CurrentObject.begin(); it != CurrentObject.end(); ++ it)
+        {
+          Tracked.insert ( *it );
+        }
+      }
+      for (int CurrentObjectID = 1; CurrentObjectID <= ClustersInfoData[Frame]->GetNumClusters(); CurrentObjectID ++)
+      {
+        if (Tracked.find( CurrentObjectID ) == Tracked.end())
+        {
+          Untracked.insert( CurrentObjectID );
+        }
+      }
+
+      /* DEBUG -- print untracked objects per frame
+      cout << "[DEBUG] Frame " << Frame << ", untracked objects: " << UntrackedObjects.size() << " [ "; 
+      ObjectSet_iterator_t it;
+      for (it = UntrackedObjects.begin(); it != UntrackedObjects.end(); ++ it)
+      {
+        cout << *it << " ";
+      }
+      cout << "]" << endl; */
+      
+      if (Untracked.size() > 0)
+      {
+        AtLeastOneUntracked = true;
+      }
+      tmp.push_back( Untracked );
     }
+  }
+
+  if (AtLeastOneUntracked)
+  {
+    UntrackedObjects.push_back( tmp );
+    /* DEBUG */
+    write(cout, UntrackedObjects, "   ", "+", " <-> "); 
   }
 }
 
-void SequenceLink::write(ostream &Channel, TClusterSequence &Sequence, string Delimiter)
+void SequenceLink::FilterByTime(double TimeThreshold)
 {
+  SequenceLink_iterator_t it;
+
+  SequenceLink_t PassFilter;
+  SequenceLink_t DontPassFilter;
+
+  if (TimeThreshold > 0)
+  {
+    cout << "+ Filtering objects below " << TimeThreshold << "% of time..." << endl << endl;
+    for (it = TrackedObjects.begin(); it != TrackedObjects.end(); ++ it)
+    {
+      ObjectSequence_t CurrentSequence = *it;
+      ObjectSequence_iterator_t it2;
+      int CurrentFrame = 0;
+      int DontPass = 0;
+
+      for (it2 = CurrentSequence.begin(); it2 != CurrentSequence.end(); ++ it2)
+      {
+        ObjectSet_t ObjectsAtCurrentFrame = *it2;
+        ObjectSet_iterator_t it3;
+        double TotalTimePct = 0;
+    
+        for (it3 = ObjectsAtCurrentFrame.begin(); it3 != ObjectsAtCurrentFrame.end(); ++ it3)
+        {
+          ClusterID_t CurrentCluster = *it3;
+  
+          TotalTimePct += ClustersInfoData[CurrentFrame]->GetPctTotalDuration( CurrentCluster );
+        }
+        TotalTimePct *= 100;
+
+        if (TotalTimePct < TimeThreshold)
+        {
+          DontPass ++;
+        }
+      }
+
+      if (DontPass > 1)
+      {
+        DontPassFilter.push_back( CurrentSequence );
+      }
+      else 
+      {
+        PassFilter.push_back( CurrentSequence );
+      }
+    }
+    TrackedObjects  = PassFilter;
+    FilteredObjects = DontPassFilter;
+
+    /* DEBUG */
+    write(cout, FilteredObjects, "   ", "+", " <-> ");
+  }
+}
+
+void SequenceLink::write(ostream &Channel, ObjectSequence_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter)
+{
+  Channel << Prefix;
+  for (int j=0; j<Sequence.size(); j++)
+  {
+    print_objects_set( Channel, Sequence[j], GroupDelimiter );
+    if (j < Sequence.size()-1) Channel << FrameDelimiter;
+    else Channel << endl;
+  }
+}
+
+void SequenceLink::write(ostream &Channel, SequenceLink_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter)
+{
+  Channel << Prefix << "Objects=" << Sequence.size() << endl;
   for (int i=0; i<Sequence.size(); i++)
   {
-    PrintClusterGroup( Channel, Sequence[i], Delimiter );
-    if (i < Sequence.size()-1) Channel << " <-> ";
-    else Channel << endl;
+    Channel << Prefix << i+1 << "=";
+    write(Channel, Sequence[i], "", GroupDelimiter, FrameDelimiter);
+  }
+  Channel << endl;
+}
+
+
+void SequenceLink::write(ostream &Channel, bool All, bool PrettyPrint)
+{
+  string Prefix;
+  string FrameDelimiter;
+  string GroupDelimiter;
+
+  if (PrettyPrint)
+  {
+    Prefix         = "   ";
+    FrameDelimiter = " <-> ";
+    GroupDelimiter = "+";
+  }
+  else
+  {
+    Prefix         = "";
+    GroupDelimiter = ",";
+    FrameDelimiter = ";";
+
+    Channel << "[Info]" << endl;
+    Channel << "Frames=" << NumFrames << endl << endl;
+  }
+ 
+  Channel << Prefix << "[Tracked]" << endl;
+  write( Channel, TrackedObjects, Prefix, GroupDelimiter, FrameDelimiter );
+  if (All)
+  {
+    Channel << Prefix << "[Filtered]" << endl;
+    write( Channel, FilteredObjects, Prefix, GroupDelimiter, FrameDelimiter );
+    Channel << Prefix << "[Untracked]" << endl;
+    write( Channel, UntrackedObjects, Prefix, GroupDelimiter, FrameDelimiter );
   }
 }
 
@@ -690,24 +990,48 @@ int SequenceLink::GetTranslationTable(int trace, int total_clusters, map< TTypeV
   }
 
   /* Overwrite the tracked clusters with the appropriate translation */
-  for (int i=0; i<FinalSequence.size(); i++)
+  for (int i=0; i<TrackedObjects.size(); i++)
   {
-    TClusterSequence CurrentSequence = FinalSequence[i];
+    ObjectSequence_t CurrentSequence = TrackedObjects[i];
 
-    TClustersSet OldClusters = CurrentSequence[trace];
+    ObjectSet_t OldClusters = CurrentSequence[trace];
 
-    TClustersSet::iterator it;
+    ObjectSet_iterator_t it;
     for (it = OldClusters.begin(); it != OldClusters.end(); it ++)
     {
       TTypeValuePair p1 = make_pair(CLUSTER_EV, *it + FIRST_CLUSTER - 1);
       TTypeValuePair p2 = make_pair(CLUSTER_EV, i + FIRST_CLUSTER);
 
-//      if (p1.second != p2.second)
-//      {
-        TranslationTable[p1] = p2;
-//      }
+      TranslationTable[p1] = p2;
     }
   }
+  
+  for (int i=0; i<FilteredObjects.size(); i++)
+  {
+    ObjectSequence_t CurrentSequence = FilteredObjects[i];
+    ObjectSet_t OldClusters = CurrentSequence[trace];
+    ObjectSet_iterator_t it;
+    for (it = OldClusters.begin(); it != OldClusters.end(); it ++)
+    {
+      TTypeValuePair p1 = make_pair(CLUSTER_EV, *it + FIRST_CLUSTER - 1);
+      TTypeValuePair p2 = make_pair(CLUSTER_EV, THRESHOLD_FILTERED);
+      TranslationTable[p1] = p2;
+    }
+  }
+
+  for (int i=0; i<UntrackedObjects.size(); i++)
+  {
+    ObjectSequence_t CurrentSequence = UntrackedObjects[i];
+    ObjectSet_t OldClusters = CurrentSequence[trace];
+    ObjectSet_iterator_t it;
+    for (it = OldClusters.begin(); it != OldClusters.end(); it ++)
+    {
+      TTypeValuePair p1 = make_pair(CLUSTER_EV, *it + FIRST_CLUSTER - 1);
+      TTypeValuePair p2 = make_pair(CLUSTER_EV, NOISE);
+      TranslationTable[p1] = p2;
+    }
+  }
+
   return TranslationTable.size();
 }
 
