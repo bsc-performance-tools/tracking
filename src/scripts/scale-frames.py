@@ -182,6 +182,9 @@ for CurrentTrace in range(0, TraceNo):
 
   ### Rewrite the plots with scaled ranges
   for Plot in AllPlots:
+    if ( Plot.split(".")[-2] == "Normalized" ):
+      continue
+
     OutputPlot = Plot + SuffixScaledPlot
 
     ### Get the plotted dimensions from the name of the plot

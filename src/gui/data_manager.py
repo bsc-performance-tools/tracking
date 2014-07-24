@@ -2,6 +2,7 @@ import ConfigParser
 import matplotlib.mlab as mlab
 import numpy as np
 import subprocess
+import sys
 import os.path
 
 #
@@ -67,6 +68,9 @@ class DataManager:
       trace = FrameConfig['otrace']
       if not os.path.isfile(trace):
         trace = os.path.dirname(sys.argv[1]) + "/" + trace
+        if not os.path.isfile(trace):
+          trace = "." + trace
+
       header = subprocess.Popen(["head", "-n1", trace], shell=False, stdout=subprocess.PIPE).communicate()[0]
       num_tasks = float(header.split("(")[2].split(":")[2])
       self.TasksPerFrame.append(num_tasks)
