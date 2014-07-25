@@ -47,6 +47,8 @@ class DataManager:
       csv = FrameConfig['data']
       if not os.path.isfile(csv):
         csv = os.path.dirname(sys.argv[1]) + "/" + csv
+        if not os.path.isfile(csv):
+          csv = "." + csv 
       self.Data[frame] = mlab.csv2rec(csv, comments='None')
 
       # Read the list of metrics from the first frame (assumes all frames have the same metrics!)

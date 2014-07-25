@@ -48,7 +48,7 @@ class Tracking
 
     } FramesMatrix_t;
   
-    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose);
+    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose);
     ~Tracking();
 
     void CorrelateTraces();
@@ -121,6 +121,8 @@ class Tracking
 "  -d <max-distance>          Maximum Epsilon distance to use the cross-classifier tracker\n"\
 "\n"\
 "  -h                         Prints this help\n"\
+"\n"\
+"  -m <min-time-pct>          Discard clusters below the given duration time percentage\n"\
 "\n"\
 "  -o                         Set the prefix for all the output files\n"\
 "\n"\

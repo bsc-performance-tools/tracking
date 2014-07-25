@@ -216,19 +216,23 @@ class PlottingManager:
           if (len(points) < 3):
             continue
 
-          hull     = ConvexHull( points, qhull_options='Pp' )
-          vertices = hull.vertices
+          try:
+            hull     = ConvexHull( points, qhull_options='Pp' )
+            vertices = hull.vertices
+          except:
+            vertices = []
  
-          polygon_points = []
-          for vertice in vertices:
-            polygon_points.append( (points[vertice][0], points[vertice][1]) )
+          if (len(vertices) > 0):
+            polygon_points = []
+            for vertice in vertices:
+              polygon_points.append( (points[vertice][0], points[vertice][1]) )
            
-          hull_polygon = Polygon(polygon_points, closed=True, alpha=0.5, color=Decorations.RGBColor0_1(current_object), zorder=4, lw=10)
-          hull_polygon.set_gid( self.Data.PrettyCluster(current_object) )
-          hull_polygon.set_visible(False)
-          self.Hulls[(current_object, current_frame)] = hull_polygon
-          self.ScatterPlotAxes.add_artist( hull_polygon )
-          AnnotatedArtists.append( hull_polygon )
+            hull_polygon = Polygon(polygon_points, closed=True, alpha=0.5, color=Decorations.RGBColor0_1(current_object), zorder=4, lw=10)
+            hull_polygon.set_gid( self.Data.PrettyCluster(current_object) )
+            hull_polygon.set_visible(False)
+            self.Hulls[(current_object, current_frame)] = hull_polygon
+            self.ScatterPlotAxes.add_artist( hull_polygon )
+            AnnotatedArtists.append( hull_polygon )
 
     # Compute the arrows for the trajectories
     for current_object in range(FirstObject, LastObject+1):

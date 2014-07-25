@@ -488,6 +488,10 @@ if ($MaxDistance ne "")
 {
   $CMD .= "-d $MaxDistance ";
 }
+if ($MinTimePct > 0)
+{
+  $CMD .= "-m $MinTimePct ";
+}
 if ($Reconstruct == 1)
 {
   $CMD .= "-r ";

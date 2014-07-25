@@ -13,7 +13,7 @@ using std::ofstream;
 #include "TraceReconstructor.h"
 #include <boost/algorithm/string/join.hpp>
 
-Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose)
+Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose)
 {
   /* Configure the tracking algorithm and the different trackers */
   InputTraces        = traces;
@@ -28,7 +28,7 @@ Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_tr
   MinimumScore       = min_score;
   CrossDistance      = max_distance;
   Threshold          = threshold;
-  TimeThresholdAfter = 5;
+  TimeThresholdAfter = min_time_pct;
   TrackersAppliedAtRound1.clear();
   ClustersInfoData.clear();
 
@@ -310,6 +310,9 @@ void Tracking::CombineTrackers1()
     CompareFrames( frame2, frame1 );
 
     FramesMatrix[frame1][frame2].TwoWay = new DoubleLinks( FramesMatrix[frame1][frame2].OneWay, FramesMatrix[frame2][frame1].OneWay );
+
+    cout << "+ 2-way links from frame " << frame1+1 << " to " << frame2+1 << ":" << endl << endl;
+    FramesMatrix[frame1][frame2].TwoWay->print();
   }
 }
 
@@ -336,7 +339,7 @@ void Tracking::RunTrackers2()
 
         if (Verbose)
         {
-          cout << "(" << UnivocalLinks->size() << " univocal links)" << endl << endl;
+          cout << "   (" << UnivocalLinks->size() << " univocal links)" << endl << endl;
         }
         if ((UnivocalLinks->size() > 0) && (UnivocalLinks->size() < FramesMatrix[frame1][frame2].TwoWay->size()))
         {
@@ -595,7 +598,7 @@ void Tracking::Recolor()
   for (int i=0; i<InputTraces.size(); i++)
   {
     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
-    string ScaledPlot = TraceBaseName + "*" + SUFFIX_SCALED_PLOT;
+    string ScaledPlot = TraceBaseName + ".*" + SUFFIX_SCALED_PLOT;
 
     InPlots.push_back ( ScaledPlot );
   }

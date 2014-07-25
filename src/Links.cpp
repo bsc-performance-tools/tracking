@@ -623,6 +623,7 @@ DoubleLinks * DoubleLinks::GetUnivocal()
     ObjectSet_t LeftGroup, RightGroup;
     LeftGroup  = GetFrom(it);
     RightGroup = GetTo(it);
+
     if ((LeftGroup.size() == 1) && (RightGroup.size() == 1))
     {
       UnivocalLinks->add( LeftGroup, RightGroup );
