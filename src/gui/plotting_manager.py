@@ -77,13 +77,18 @@ class PlottingManager:
     self.ScatterPlotAxes = self.GUI.GetPlotAxes()
     self.ClearAxes1()
 
-
     if (recompute_ranges):
       self.Compute_Ranges()
 
     self.ScatterGraph()
-    self.Display_Objects()
-    self.Rescale()
+
+    self.Display_Objects(False)
+
+    if (recompute_ranges):
+      self.Rescale()
+    else:
+      self.UpdateCanvas1()
+
     return
 
   def ClearAnnotations(self):
@@ -712,14 +717,14 @@ class PlottingManager:
     self.EvolutionAxes3.grid( show_or_hide )
     self.UpdateCanvas2()
      
- 
-  def Display_Objects(self):
+  def Display_Objects(self, update_canvas=True):
     self.Show_Points(True)
     self.Show_Centroids(True)
     self.Show_Hulls(True)
     self.Show_Arrows(True)
-    self.UpdateCanvas1()
-    self.GUI.Timeline.UpdateCanvas()
+    if (update_canvas):
+      self.UpdateCanvas1()
+      self.GUI.Timeline.UpdateCanvas()
     return
 
   def Show_Points(self, show_artists):
