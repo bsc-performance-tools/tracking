@@ -40,11 +40,13 @@ class Gap(wx.BoxSizer):
     self.AddSpacer(1)
 
 class FrameTimeline(scrolled.ScrolledPanel):
-  def __init__(self, parent, frames):
+  def __init__(self, main, parent, frames, plotter):
 
+    self.MainFrame    = main
     self.ThumbAxes    = defaultdict()
     self.ThumbCanvas  = defaultdict() 
     self.ThumbFigures = defaultdict() 
+    self.Plotter      = plotter
 
     scrolled.ScrolledPanel.__init__(self, parent, -1, size=(-1, 110))
      
@@ -121,13 +123,13 @@ class FrameTimeline(scrolled.ScrolledPanel):
 
   def Rescale(self):
     for i in self.ThumbAxes:
-      self.ThumbAxes[i].set_xlim( App.main.Plotter.GetXRange( i ) )
-      self.ThumbAxes[i].set_ylim( App.main.Plotter.GetYRange( i ) )
-      if (App.main.LogX() == True):
+      self.ThumbAxes[i].set_xlim( self.Plotter.GetXRange( i ) )
+      self.ThumbAxes[i].set_ylim( self.Plotter.GetYRange( i ) )
+      if (self.MainFrame.LogX() == True):
         self.ThumbAxes[i].set_xscale('symlog')
       else:
         self.ThumbAxes[i].set_xscale('linear')
-      if (App.main.LogY() == True):
+      if (self.MainFrame.LogY() == True):
         self.ThumbAxes[i].set_yscale('symlog')
       else:
         self.ThumbAxes[i].set_yscale('linear')
@@ -229,7 +231,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.Bind(wx.EVT_BUTTON,       self.on_PlaybarNext_Button,       self.PlaybarNextButton)
 
     # Frame selector
-    self.Timeline = FrameTimeline( self.Panel, self.Data.GetNumberOfFrames() )
+    self.Timeline = FrameTimeline( self, self.Panel, self.Data.GetNumberOfFrames(), self.Plotter )
     self.SizerTimeline = wx.BoxSizer( wx.HORIZONTAL )
     self.SizerTimeline.Add( self.Timeline, 1, wx.EXPAND )
 
@@ -781,12 +783,18 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.PlaybarPlayButton.Disable()
     self.PlaybarNextButton.Disable()
     self.Timeline.Disable()
+    self.Toolbar1.Toggle_Points(False)
+    self.Toolbar1.Toggle_Centroids(True)
+    self.Toolbar1.Toggle_Hulls(False)
 
   def Setup_Frame_View(self):
     self.PlaybarPrevButton.Enable()
     self.PlaybarPlayButton.Enable()
     self.PlaybarNextButton.Enable()
     self.Timeline.Enable()
+    self.Toolbar1.Toggle_Points(True)
+    self.Toolbar1.Toggle_Centroids(False)
+    self.Toolbar1.Toggle_Hulls(False)
 
   def on_PlaybarParaver_Button(self, event):
     if (Verbose):
@@ -984,6 +992,21 @@ class Toolbar1(NavigationToolbar):
     App.main.Plotter.UpdateCanvas1()
 
   def on_Hulls_Check(self, event):
+    App.main.Plotter.Show_Hulls( self.GetToolState(self.ON_HULLS_CHECK) )
+    App.main.Plotter.UpdateCanvas1()
+
+  def Toggle_Points(self, bool):
+    self.ToggleTool( self.ON_POINTS_CHECK, bool )
+    App.main.Plotter.Show_Points( self.GetToolState(self.ON_POINTS_CHECK) )
+    App.main.Plotter.UpdateCanvas1()
+
+  def Toggle_Centroids(self, bool):
+    self.ToggleTool( self.ON_CENTROIDS_CHECK, bool )
+    App.main.Plotter.Show_Centroids( self.GetToolState(self.ON_CENTROIDS_CHECK) )
+    App.main.Plotter.UpdateCanvas1()
+
+  def Toggle_Hulls(self, bool):
+    self.ToggleTool( self.ON_HULLS_CHECK, bool )
     App.main.Plotter.Show_Hulls( self.GetToolState(self.ON_HULLS_CHECK) )
     App.main.Plotter.UpdateCanvas1()
 

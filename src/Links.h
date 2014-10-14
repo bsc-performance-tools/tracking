@@ -15,7 +15,7 @@ using std::pair;
 using std::string;
 using std::vector;
 
-typedef ClusterID_t            ObjectID;
+typedef ClusterID_t            ObjectID_t;
 typedef ClustersSet_t          ObjectSet_t;
 typedef ObjectSet_t::iterator ObjectSet_iterator_t;
 typedef ObjectSet_iterator_t  ObjectLinks_iterator_t;
@@ -29,28 +29,28 @@ int  subset( ObjectSet_t &set1, ObjectSet_t &set2 );
 class ObjectLinks
 {
   public:
-    ObjectLinks(ObjectID cluster_id);
+    ObjectLinks(ObjectID_t cluster_id);
     ~ObjectLinks();
 
     void clear     (void);
     int  size      (void);
-    void add       (ObjectID linked_cluster_id);
+    void add       (ObjectID_t linked_cluster_id);
     void print     (void);
     void join      (ObjectLinks *object2);
     void intersect (ObjectLinks *object2);
 
-    ObjectID     get_object();
+    ObjectID_t     get_object();
     ObjectSet_t get_links();
     
     ObjectLinks_iterator_t begin(void);
     ObjectLinks_iterator_t end(void);
 
   private:
-    ObjectID     ObjectID;
+    ObjectID_t     ObjectID;
     ObjectSet_t Links;
 };
 
-typedef map<ObjectID, ObjectSet_t> FrameLinks_t;
+typedef map<ObjectID_t, ObjectSet_t> FrameLinks_t;
 typedef FrameLinks_t::iterator FrameLinks_iterator_t;
 
 /**
@@ -63,12 +63,12 @@ class FrameLinks
     ~FrameLinks();
 
     void add   (ObjectLinks *object_links);
-    void remove(ObjectID cluster_id);
+    void remove(ObjectID_t cluster_id);
     void print (void);
     void clear (void);
     int  size  (void);
 
-    ObjectSet_t get_links( ObjectID object_id );
+    ObjectSet_t get_links( ObjectID_t object_id );
 
     FrameLinks_iterator_t begin();
     FrameLinks_iterator_t end();

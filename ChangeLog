@@ -1,5 +1,10 @@
 ChangeLog 'Tracking Tool'
 
+2014-10-14 German Llort <german.llort@bsc.es>
+	* Fixed minor bugs in the GUI
+	* Renamed conflicting type from ObjectID to ObjectID_t
+	* Upgraded version to 2.6.1
+
 2014-07-08 German Llort <german.llort@bsc.es>
 	+ Added new tracker based on density.
 	* Designed new GUI.

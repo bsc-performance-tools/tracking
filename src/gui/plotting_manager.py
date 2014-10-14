@@ -71,6 +71,7 @@ class PlottingManager:
 #    self.ClearAxes()
 
     self.Compute_Ranges()
+    self.Rescale()
 
   def Replot(self, recompute_ranges=False):
     self.ScatterPlotAxes = self.GUI.GetPlotAxes()
@@ -166,9 +167,13 @@ class PlottingManager:
         # 
         xdata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricX )
         ydata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricY )
+        if (len(xdata) == 0) or (len(ydata) == 0):
+          continue
         if self.GUI.in_3D():
           zdata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricZ )
-         
+          if (len(zdata) == 0):
+            continue
+
         if (self.GUI.in_Trajectory_View()):
           if self.GUI.RatioX():
             xdata = xdata * TasksPerFrame[current_frame-1]
@@ -696,7 +701,6 @@ class PlottingManager:
 
     self.UpdateCanvas1()
     self.GUI.Timeline.Rescale()
-
 
   def ShowGrid1(self, show_or_hide):
     self.ScatterPlotAxes.grid( show_or_hide )
