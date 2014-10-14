@@ -157,6 +157,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
     self.FocusOnFrame   = 1 
 
+    self.LoadIcons()
     self.SetPosition(pos)
     self.CreateStatusBar()
     self.Setup_Controls()
@@ -164,6 +165,15 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.Plotter.Initialize( self )
     self.Plotter.ComputePlots( )
     self.Plotter.Display_Objects( )
+
+  def LoadIcons(self):
+    self.bmp_play            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/play.png")
+    self.bmp_prev            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/prev.png")
+    self.bmp_next            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/next.png")
+    self.bmp_tracking        = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/tracking_view_2.png")
+    self.bmp_frames          = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/frames_view_2.png")
+    self.bmp_timeline        = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/timeline.png")
+    self.bmp_swap            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/swap.png")
 
   def UpdateStatus(self, message):
     self.SetStatusText(message)
@@ -212,11 +222,12 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
     # Playbar
     self.SizerPlaybar            = wx.BoxSizer( wx.HORIZONTAL )
-    self.PlaybarTrajectoryToggle = wx.ToggleButton(self.Panel, -1, "Trajectory")
-    self.PlaybarParaverButton    = wx.Button(self.Panel, -1, "Paraver")
-    self.PlaybarPrevButton = wx.Button(self.Panel, -1, "Prev")
-    self.PlaybarPlayButton = wx.Button(self.Panel, -1, "Play")
-    self.PlaybarNextButton = wx.Button(self.Panel, -1, "Next")
+    self.PlaybarTrajectoryToggle = wx.BitmapButton(self.Panel, -1, size=(100,30), bitmap=self.bmp_tracking)
+    self.PlaybarTrajectoryToggleValue = False
+    self.PlaybarParaverButton    = wx.BitmapButton(self.Panel, -1, size=(100,30), bitmap=self.bmp_timeline)
+    self.PlaybarPrevButton = wx.BitmapButton(self.Panel, -1, size=(100,30), bitmap=self.bmp_prev)
+    self.PlaybarPlayButton = wx.BitmapButton(self.Panel, -1, size=(100,30), bitmap=self.bmp_play)
+    self.PlaybarNextButton = wx.BitmapButton(self.Panel, -1, size=(100,30), bitmap=self.bmp_next)
     self.SizerPlaybar.Add( self.PlaybarTrajectoryToggle, 0 )
     self.SizerPlaybar.Add( self.PlaybarParaverButton,    0 )
     self.SizerPlaybar.Add( wx.BoxSizer( wx.HORIZONTAL ), 1, wx.EXPAND )
@@ -224,11 +235,11 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.SizerPlaybar.Add( self.PlaybarPlayButton,       0 )
     self.SizerPlaybar.Add( self.PlaybarNextButton,       0 )
 
-    self.Bind(wx.EVT_TOGGLEBUTTON, self.on_PlaybarTrajectory_Toggle, self.PlaybarTrajectoryToggle)
-    self.Bind(wx.EVT_BUTTON,       self.on_PlaybarParaver_Button,    self.PlaybarParaverButton)
-    self.Bind(wx.EVT_BUTTON,       self.on_PlaybarPrevious_Button,   self.PlaybarPrevButton)
-    self.Bind(wx.EVT_BUTTON,       self.on_PlaybarPlay_Button,       self.PlaybarPlayButton)
-    self.Bind(wx.EVT_BUTTON,       self.on_PlaybarNext_Button,       self.PlaybarNextButton)
+    self.Bind(wx.EVT_BUTTON, self.on_PlaybarTrajectory_Toggle, self.PlaybarTrajectoryToggle)
+    self.Bind(wx.EVT_BUTTON, self.on_PlaybarParaver_Button,    self.PlaybarParaverButton)
+    self.Bind(wx.EVT_BUTTON, self.on_PlaybarPrevious_Button,   self.PlaybarPrevButton)
+    self.Bind(wx.EVT_BUTTON, self.on_PlaybarPlay_Button,       self.PlaybarPlayButton)
+    self.Bind(wx.EVT_BUTTON, self.on_PlaybarNext_Button,       self.PlaybarNextButton)
 
     # Frame selector
     self.Timeline = FrameTimeline( self, self.Panel, self.Data.GetNumberOfFrames(), self.Plotter )
@@ -256,7 +267,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.SizerAxesBox.Add( self.SizerAxesControls2, 50, wx.EXPAND )
 
     # Swap axes button
-    self.AxesSwapButton = wx.BitmapButton(self.Panel, -1, size=(30, -1))
+    self.AxesSwapButton = wx.BitmapButton(self.Panel, -1, size=(30, -1), bitmap=self.bmp_swap)
     self.Bind(wx.EVT_BUTTON, self.on_Swap_Button, self.AxesSwapButton)
 
     # 3D button
@@ -765,20 +776,22 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     if (Verbose):
       print "EVT_TOGGLEBUTTON::PlaybarTrajectoryToggle"
 
-    if (event.GetEventObject().GetValue()):
-      self.Setup_Trajectory_View()
-    else:
+    if (self.PlaybarTrajectoryToggleValue):
       self.Setup_Frame_View()
+    else:
+      self.Setup_Trajectory_View()
+    self.PlaybarTrajectoryToggleValue = not(self.PlaybarTrajectoryToggleValue)
     self.Plotter.Replot()
     return
 
   def in_Trajectory_View(self):
-    return self.PlaybarTrajectoryToggle.GetValue() 
+    return self.PlaybarTrajectoryToggleValue
 
   def in_Frame_View(self):
-    return not self.PlaybarTrajectoryToggle.GetValue() 
+    return not self.PlaybarTrajectoryToggleValue 
 
   def Setup_Trajectory_View(self):
+    self.PlaybarTrajectoryToggle.SetBitmapLabel(self.bmp_frames)
     self.PlaybarPrevButton.Disable()
     self.PlaybarPlayButton.Disable()
     self.PlaybarNextButton.Disable()
@@ -788,6 +801,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.Toolbar1.Toggle_Hulls(False)
 
   def Setup_Frame_View(self):
+    self.PlaybarTrajectoryToggle.SetBitmapLabel(self.bmp_tracking)
     self.PlaybarPrevButton.Enable()
     self.PlaybarPlayButton.Enable()
     self.PlaybarNextButton.Enable()

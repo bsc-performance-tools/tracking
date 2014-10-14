@@ -22,6 +22,7 @@ try:
 except:
   AvailableHulls = False
 
+
 CLUSTER_ID = 'clusterid'
 
 
@@ -65,8 +66,8 @@ class PlottingManager:
     self.EvolutionAxes2 = Figure2.add_subplot(312, sharex=self.EvolutionAxes1)
     self.EvolutionAxes3 = Figure2.add_subplot(313, sharex=self.EvolutionAxes1)
 
-    plt.setp(self.EvolutionAxes1.get_xticklabels(), visible=True)
-    plt.setp(self.EvolutionAxes2.get_xticklabels(), visible=True)
+    self.EvolutionAxes1.get_xaxis().set_visible(False)
+    self.EvolutionAxes2.get_xaxis().set_visible(False)
 
 #    self.ClearAxes()
 
@@ -342,6 +343,8 @@ class PlottingManager:
         object_x = np.linspace(1, NumberOfFrames, len(object_y))
         self.EvolutionAxes2.scatter (object_x, object_y, color=(r, g, b), s=50, label="Region "+str(self.Data.PrettyCluster(cluster_id)))
 
+    self.EvolutionAxes2.set_title(SelectedMetric.upper()[2:]+' for all regions')
+
     if (self.GUI.Toolbar2.GetToolState(self.GUI.Toolbar2.ON_LEGEND_CHECK) == True):
       self.EvolutionAxes2.legend(loc=(0,0), prop={'size':7})
 
@@ -404,8 +407,8 @@ class PlottingManager:
         metric_x = np.linspace(1, NumberOfFrames, len(metric_y))
         self.EvolutionAxes1.scatter (metric_x, metric_y, color=(r, g, b), label=self.Data.PrettyMetric(metric), s=50 )
 
-    self.EvolutionAxes1.set_title('Region '+str(self.Data.PrettyCluster(SelectedCluster))+' metrics evolution')
-    self.EvolutionAxes1.set_xticks(range(1, NumberOfFrames+1))
+    self.EvolutionAxes1.set_title('All metrics for region '+str(self.Data.PrettyCluster(SelectedCluster)))
+#    self.EvolutionAxes1.set_xticks(range(1, NumberOfFrames+1))
     self.EvolutionAxes1.set_xlim(1, NumberOfFrames)
     self.EvolutionAxes1.set_xbound(1, NumberOfFrames)
 
@@ -438,7 +441,7 @@ class PlottingManager:
         metric_min.append( nanmin( frame_dispersion ) )
         metric_max.append( nanmax( frame_dispersion ) )
 
-    self.EvolutionAxes3.set_title('Region '+str(self.Data.PrettyCluster(SelectedCluster))+' - '+SelectedMetric.upper()[2:])
+    self.EvolutionAxes3.set_title(SelectedMetric.upper()[2:]+' for region '+str(self.Data.PrettyCluster(SelectedCluster)))
     if (len(metric_dispersion) > 1):
 
       if (self.GUI.Toolbar2.GetToolState(self.GUI.Toolbar2.ON_BOXPLOT_CHECK)):
@@ -470,7 +473,6 @@ class PlottingManager:
 
     if (self.GUI.Toolbar2.GetToolState(self.GUI.Toolbar2.ON_LEGEND_CHECK) == True):
       self.EvolutionAxes3.legend(loc=(0,0), prop={'size':7})
-
 
   def fitting_log(self, x, a, b):
     return a*np.log(x)+b
