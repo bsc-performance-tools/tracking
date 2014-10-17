@@ -1,7 +1,11 @@
 ChangeLog 'Tracking Tool'
 
+2014-10-17 German Llort <german.llort@bsc.es>
+	+ Added rpaths in the linker flags to avoid errors while loading
+	shared libraries
+
 2014-10-14 German Llort <german.llort@bsc.es>
-	* Added some icons and minor improvements in the GUI
+	+ Added some icons and minor improvements in the GUI
 	* Changed some drawing priorities
 	* Fixed minor bugs in the GUI
 	* Renamed conflicting type from ObjectID to ObjectID_t

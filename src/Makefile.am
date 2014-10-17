@@ -26,7 +26,7 @@ tracking_bin_SOURCES = \
   ClusterIDs.h 
   
 tracking_bin_CXXFLAGS  = $(BOOST_CPPFLAGS) -I$(ANN_DIR)/include -I$(SCORE_DIR)/include $(PARAVER_KERNEL_INCLUDES)
-tracking_bin_LDFLAGS   = $(PARAVER_KERNEL_LDFLAGS) $(PARAVER_KERNEL_LIBS)
+tracking_bin_LDFLAGS   = $(PARAVER_KERNEL_LDFLAGS) $(PARAVER_KERNEL_LIBS) $(PARAVER_KERNEL_RPATH) -R $(prefix)/lib
 tracking_bin_LDADD     = $(ANN_DIR)/src/libANNClassify.la $(SCORE_DIR)/libSequenceScore.la
 
 if HAVE_PARAVER
