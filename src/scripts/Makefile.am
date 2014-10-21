@@ -22,7 +22,6 @@ install-data-hook:
 	cp $(HISTO3D_CALLERS_TEMPLATE) ${prefix}/etc
 	$(top_srcdir)/substitute $(SED) "@sub_TRACKING_PREFIX@" ${prefix} ${bindir}/$(TRACKING_PREPROCESS)
 	$(top_srcdir)/substitute $(SED) "@sub_TRACKING_PREFIX@" ${prefix} ${bindir}/$(TRACKING_LAUNCHER)
-	$(top_srcdir)/substitute $(SED) "@sub_BOOST_LDPATH@" @BOOST_LDPATH@ ${bindir}/$(TRACKING_LAUNCHER)
 	$(top_srcdir)/substitute $(SED) "@sub_CLUSTERING_HOME@" @CLUSTERING_HOME@ ${bindir}/$(TRACKING_LAUNCHER)
 	$(top_srcdir)/substitute $(SED) "@sub_PARAVER_HOME@" @PARAVER_HOME@ ${bindir}/$(TRACKING_LAUNCHER)
 	$(top_srcdir)/substitute $(SED) "@sub_SCRIPT_SCALE_FRAMES@" $(SCRIPT_SCALE_FRAMES) ${bindir}/$(TRACKING_PREPROCESS)

@@ -34,9 +34,12 @@ int ReadArgs(int argc, char *argv[])
 {
   int j = 1;
 
-  if (((argc == 1) || (argc == 2)) && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)))
+  fprintf(stderr, "argc: %d\n", argc);
+  if ((argc == 1) || ((argc == 2) && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))))
   {
 
+    fprintf(stderr, "%s\n", argv[0]);
+    fprintf(stderr, "%s\n", basename(argv[0]));
     fprintf(stdout, HELP, basename(argv[0]));
     exit(EXIT_SUCCESS);
   }
@@ -104,8 +107,8 @@ int ReadArgs(int argc, char *argv[])
 
 int main(int argc, char **argv)
 {
-  vector<string> TracesArray;
-  vector<ClusterID_t>    NumClustersToTrack;
+  vector<string>      TracesArray;
+  vector<ClusterID_t> NumClustersToTrack;
 
   int FirstTraceArg = ReadArgs(argc, argv);
 

@@ -1,4 +1,10 @@
-ChangeLog 'Tracking Tool'
+ChangeLog 'Tracking'
+
+2014-10-21 German Llort <german.llort@bsc.es>
+	* Fixed dependency problems with libboost
+	- Removed unnecessary scripts
+	* Fixed crash when tracking.bin was called without arguments
+	* Upgraded version to 2.6.2
 
 2014-10-17 German Llort <german.llort@bsc.es>
 	+ Added rpaths in the linker flags to avoid errors while loading

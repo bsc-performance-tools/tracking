@@ -6,7 +6,7 @@
 #########################
 
 # Initialize autoconf & define package name, version and bug-report address 
-AC_INIT(Tracking Tool, 2.6.1, tools@bsc.es)
+AC_INIT(Tracking, 2.6.2, tools@bsc.es)
 
 # GNU Autotools intermediate files are stored in the following directory
 AC_CONFIG_AUX_DIR(config)
@@ -44,7 +44,6 @@ AM_PROG_CC_C_O
 #    Checks for libraries    #
 ##############################
 BOOST_REQUIRE(1.36)
-BOOST_SERIALIZATION
 AX_PROG_CLUSTERING
 AX_PROG_PARAVER
 
