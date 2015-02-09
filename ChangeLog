@@ -1,5 +1,10 @@
 ChangeLog 'Tracking'
 
+2015-02-09 German Llort <german.llort@bsc.es>
+	* Fixed arguments in histogram->execute(), now requires a new argument
+	for the progress bar
+	* Upgraded version to 2.6.3
+
 2014-10-21 German Llort <german.llort@bsc.es>
 	* Fixed dependency problems with libboost
 	- Removed unnecessary scripts

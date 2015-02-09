@@ -112,7 +112,7 @@ void CallersHistogram::parseHistogram(Histogram *histogram)
   }
   histogram->setControlMin(FIRST_VALID_CALLER);
   histogram->setControlDelta(1);
-  histogram->execute( histogram->getBeginTime(), histogram->getEndTime(), selectedRows );
+  histogram->execute( histogram->getBeginTime(), histogram->getEndTime(), selectedRows, NULL );
 
   /* Select the histogram metric */
   HistogramTotals *histogram_totals = histogram->getColumnTotals();
