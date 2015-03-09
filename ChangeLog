@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2015-03-09 German Llort <german.llort@bsc.es>
+	* Fixed missing execution permissions in the installed scripts 
+
 2015-02-09 German Llort <german.llort@bsc.es>
 	* Fixed arguments in histogram->execute(), now requires a new argument
 	for the progress bar

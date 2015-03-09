@@ -22,9 +22,9 @@ install-data-hook:
 	mkdir -p $(prefix)/etc
 	cp $(GUI_LAUNCHER_TEMPLATE) $(prefix)/bin/$(GUI_LAUNCHER)
 	$(top_srcdir)/substitute $(SED) "@sub_PREFIX@" "${prefix}" $(prefix)/bin/$(GUI_LAUNCHER)
-	chmod u+x $(prefix)/bin/$(GUI_LAUNCHER)
+	chmod a+x $(prefix)/bin/$(GUI_LAUNCHER)
 	cp $(GUI_TEMPLATE) $(prefix)/bin/$(GUI)
 	$(top_srcdir)/substitute $(SED) "@sub_PREFIX@" "${prefix}" $(prefix)/bin/$(GUI)
-	chmod u+x $(prefix)/bin/$(GUI)
+	chmod a+x $(prefix)/bin/$(GUI)
 	cp -r $(ICONS_DIR) $(prefix)/etc
 	cp $(PARAVER_CFGS) $(prefix)/etc

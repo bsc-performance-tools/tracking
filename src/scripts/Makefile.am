@@ -26,6 +26,6 @@ install-data-hook:
 	$(top_srcdir)/substitute $(SED) "@sub_PARAVER_HOME@" @PARAVER_HOME@ ${bindir}/$(TRACKING_LAUNCHER)
 	$(top_srcdir)/substitute $(SED) "@sub_SCRIPT_SCALE_FRAMES@" $(SCRIPT_SCALE_FRAMES) ${bindir}/$(TRACKING_PREPROCESS)
 	$(top_srcdir)/substitute $(SED) "@sub_CALLERS_TEMPLATE@" $(HISTO3D_CALLERS_TEMPLATE) ${bindir}/$(TRACKING_PREPROCESS)
-	chmod u+x ${bindir}/$(TRACKING_PREPROCESS)
-	chmod u+x ${bindir}/$(TRACKING_LAUNCHER)
+	chmod a+x ${bindir}/$(TRACKING_PREPROCESS)
+	chmod a+x ${bindir}/$(TRACKING_LAUNCHER)
 
