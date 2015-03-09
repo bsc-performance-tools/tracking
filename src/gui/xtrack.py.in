@@ -170,8 +170,8 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.bmp_play            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/play.png")
     self.bmp_prev            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/prev.png")
     self.bmp_next            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/next.png")
-    self.bmp_tracking        = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/tracking_view_2.png")
-    self.bmp_frames          = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/frames_view_2.png")
+    self.bmp_tracking        = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/tracking_view.png")
+    self.bmp_frames          = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/frames_view.png")
     self.bmp_timeline        = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/timeline.png")
     self.bmp_swap            = wx.Bitmap(INSTALLATION_PATH+"/etc/icons/swap.png")
 
