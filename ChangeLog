@@ -5,6 +5,8 @@ ChangeLog 'Tracking'
 	* Fixed distribution of Python scripts
 	+ Added command-line parameter to enable the density tracker
 	* Changed deprecated symbols wx.PySimpleApp and wx.Color into wx.App and wx.Colour
+	* Previous flag -d (distance tracker) changed into -p (position tracker), to leave -d for the density tracker
+	* Flag -r (reconstruct traces) is now forced and always enabled
 	* Upgraded version to 2.6.4
 
 2015-03-09 German Llort <german.llort@bsc.es>

@@ -51,7 +51,7 @@ sub PrintUsage
   print "        Set the prefix for all the output files.\n";
   print "  -p MAX_DISTANCE\n";
   print "        Maximum Epsilon distance to use the position tracker\n";
-  print "  -r    Enable the trace reconstruction with tracked clusters.\n";
+#  print "  -r    Enable the trace reconstruction with tracked clusters.\n";
   print "  -s DIM1,DIM2...\n";
   print "        Select the dimensions to scale with the number of tasks (DEPRECATED).\n";
   print "  -t THRESHOLD\n";
@@ -502,10 +502,10 @@ if ($MinTimePct > 0)
 {
   $CMD .= "-m $MinTimePct ";
 }
-if ($Reconstruct == 1)
-{
+#if ($Reconstruct == 1)
+#{
   $CMD .= "-r ";
-}
+#}
 if ($Threshold ne "")
 {
   if ($Threshold eq "any") 
