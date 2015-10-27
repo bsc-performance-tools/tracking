@@ -406,23 +406,23 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
     index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Filtered')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_THRESHOLD_FILTERED)
-    self.ClusterSelector.SetItemBackgroundColour(index, wx.Color(r, g, b))
+    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
-    self.ClusterSelector.SetItemTextColour(index, wx.Color(r, g, b))
+    self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
     self.ClusterSelector.CheckItem(index, False)
     index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Untracked')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_UNTRACKED)
-    self.ClusterSelector.SetItemBackgroundColour(index, wx.Color(r, g, b))
+    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
-    self.ClusterSelector.SetItemTextColour(index, wx.Color(r, g, b))
+    self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
     self.ClusterSelector.CheckItem(index, False)
 
     for cluster_id in range(self.Data.GetFirstObject(), self.Data.GetLastObject()+1):
       index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Region '+str(self.Data.PrettyCluster(cluster_id)))
       (r, g, b) = Decorations.RGBColor0_255(cluster_id)
-      self.ClusterSelector.SetItemBackgroundColour(index, wx.Color(r, g, b))
+      self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
       (r, g, b) = Decorations.FontColor( (r, g, b) )
-      self.ClusterSelector.SetItemTextColour(index, wx.Color(r, g, b))
+      self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
       self.ClusterSelector.CheckItem(index, True)
 
     self.ClusterSelector.Select(2, True)
@@ -450,9 +450,9 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
       index = self.MetricSelector.InsertStringItem(sys.maxint, pretty_metric)
       metric_id = index
       (r, g, b) = Decorations.MetricColor(metric_id)
-      self.MetricSelector.SetItemBackgroundColour(index, wx.Color(r*255, g*255, b*255))
+      self.MetricSelector.SetItemBackgroundColour(index, wx.Colour(r*255, g*255, b*255))
       (r, g, b) = Decorations.FontColor( (r*255, g*255, b*255) )
-      self.MetricSelector.SetItemTextColour(index, wx.Color(r, g, b))
+      self.MetricSelector.SetItemTextColour(index, wx.Colour(r, g, b))
 
       if (self.Data.isClusteringDimension(metric)):
         self.MetricSelector.CheckItem( index )
@@ -524,7 +524,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     cluster_id = self.GetClusterID( object_id )
     (data, labels) = self.Data.GetCallers( frame, cluster_id )
     if ((len(data) > 0) and (len(labels) > 0)):
-      dialog = wx.PySimpleApp(False)
+      dialog = wx.App(False)
   
       dialog.main = callers_frame.CallersFrame(self.Panel, "region "+str(cluster_id), data, labels)
       dialog.main.Centre()
@@ -1090,7 +1090,7 @@ Data    = DataManager.DataManager( None, sys.argv[1] )
 
 Plotter = PlottingManager.PlottingManager( None, Data )
 
-App = wx.PySimpleApp(False)
+App = wx.App(False)
 App.main = MainFrame(None, "Tracking", Data, Plotter )
 App.main.Show()
 App.MainLoop()

@@ -23,6 +23,7 @@ double MinimumScore   = DEFAULT_MIN_SCORE;
 double CrossDistance  = DEFAULT_CROSS_DISTANCE;
 double Threshold      = DEFAULT_THRESHOLD;
 double MinTimePct     = 0;
+bool   UseDensity     = false;
 
 void PrintUsage(char* ApplicationName)
 {
@@ -61,8 +62,7 @@ int ReadArgs(int argc, char *argv[])
           CallersCFGRead = true;
           break;
         case 'd':
-          j++;
-          CrossDistance = atof(argv[j]);
+          UseDensity = true;
           break;
         case 'h':
           PrintUsage(basename(argv[0]));
@@ -76,6 +76,10 @@ int ReadArgs(int argc, char *argv[])
           j++;
           OutputPrefix = argv[j];
           OutputPrefix += ".";
+          break;
+        case 'p':
+          j++;
+          CrossDistance = atof(argv[j]);
           break;
         case 'r':
           Reconstruct = true;
@@ -134,7 +138,7 @@ int main(int argc, char **argv)
     NumClustersToTrack.push_back(LastClusterForTrace);
   }
 
-  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, MinTimePct, Threshold, CrossDistance, CallersCFG, MinimumScore, OutputPrefix, Reconstruct, Verbose);
+  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, MinTimePct, Threshold, CrossDistance, CallersCFG, MinimumScore, UseDensity, OutputPrefix, Reconstruct, Verbose);
 
   ClustersTracking->CorrelateTraces();
   delete ClustersTracking;

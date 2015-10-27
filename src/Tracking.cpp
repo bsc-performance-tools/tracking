@@ -13,7 +13,7 @@ using std::ofstream;
 #include "TraceReconstructor.h"
 #include <boost/algorithm/string/join.hpp>
 
-Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose)
+Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, bool use_density, string prefix, bool reconstruct, int verbose)
 {
   /* Configure the tracking algorithm and the different trackers */
   InputTraces        = traces;
@@ -36,7 +36,7 @@ Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_tr
   UseDistance = (max_distance > 0);
   UseCallers       = (callers_cfg.size() > 0 ? true : false);
   UseAlignment     = true;
-  UseDensity       = false;
+  UseDensity       = use_density;
 
   Alignments.clear();
   Histograms.clear();

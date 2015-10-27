@@ -43,16 +43,17 @@ sub PrintUsage
   print "  -a MIN_SCORE\n";
   print "        Minimum SPMD score to use the alignment tracker\n";
   print "  -c CALLER_LEVEL\n";
-  print "        Enable the callstack heuristics at the specified depth.\n";
-  print "  -d MAX_DISTANCE\n";
-  print "        Maximum Epsilon distance to use the cross-classifier tracker\n";
+  print "        Enable the callstack tracker at the specified depth.\n";
+  print "  -d    Enable the density tracker.\n";
   print "  -m MIN_TIME_PCT\n";
   print "        Discard the clusters below the given duration time percentage.\n";
-  print "  -s DIM1,DIM2...\n";
-  print "        Select the dimensions to scale with the number of tasks (DEPRECATED).\n";
   print "  -o OUTPUT_PREFIX\n";
   print "        Set the prefix for all the output files.\n";
+  print "  -p MAX_DISTANCE\n";
+  print "        Maximum Epsilon distance to use the position tracker\n";
   print "  -r    Enable the trace reconstruction with tracked clusters.\n";
+  print "  -s DIM1,DIM2...\n";
+  print "        Select the dimensions to scale with the number of tasks (DEPRECATED).\n";
   print "  -t THRESHOLD\n";
   print "        Minimum likeliness percentage in order to match two clusters (special values: all | first).\n";
   print "  -v[v] Run in verbose mode (-vv for extra debug messages).\n";
@@ -135,13 +136,7 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
     }
     case "d"
     {
-      $i ++;
-      $MaxDistance = $ARGV[$i];
-      if (($MaxDistance == 0 && $MaxDistance ne '0') || ($MaxDistance < 0) || ($MaxDistance > 1))
-      {
-        print "*** Error: -d: Distance has to be between 0 and 1\n";
-        exit;
-      }
+      $UseDensity = 1
     }
     case "l"
     {
@@ -154,7 +149,7 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       $MinTimePct = $ARGV[$i];
       if (($MinTimePct == 0 && $MinTimePct ne '0') || ($MinTimePct < 0) || ($MinTimePct > 100))
       {
-        print "*** Error: -m: Mininum cluster time percentage has to be between 0 and 100\n";
+        print "*** Error: -m: Minimum cluster time percentage has to be between 0 and 100\n";
         exit;
       }
     }
@@ -162,6 +157,16 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
     {
       $i ++;
       $OutputPrefix = $ARGV[$i];
+    }
+    case "p"
+    {
+      $i ++;
+      $MaxDistance = $ARGV[$i];
+      if (($MaxDistance == 0 && $MaxDistance ne '0') || ($MaxDistance < 0) || ($MaxDistance > 1))
+      {
+        print "*** Error: -p: Distance has to be between 0 and 1\n";
+        exit;
+      }
     }
     case "r"
     {
@@ -197,7 +202,7 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       $ClusteringConfig = $ARGV[$i];
       if (! -e $ClusteringConfig)
       {
-        print "*** Error: -d: Can't find clustering definition XML file '$ClusteringConfig'\n";
+        print "*** Error: -x: Can't find clustering definition XML file '$ClusteringConfig'\n";
         exit;
       }
     }
@@ -349,9 +354,10 @@ print "\n+ Tracking configuration:\n";
 print "... Sequence of ".$NumberOfTraces." traces\n";
 print "... Minimum cluster time: ".$MinTimePct."%\n";
 print "... Reconstruct traces: ".($Reconstruct == 1 ? "enabled" : "disabled")."\n";
-print "... Distance tracking: ".($MaxDistance > 0 ? "cross-classifying with radius $MaxDistance" : "disabled")."\n";
+print "... Position tracking: ".($MaxDistance > 0 ? "cross-classifying with radius $MaxDistance" : "disabled")."\n";
 print "... Callers tracking: ".($CallersLevel > 0 ? "enabled for level $CallersLevel" : "disabled")."\n";
 print "... Alignment tracking: ".($ScoreMinimum ne "" ? "enabled above score $ScoreMinimum" : "disabled")."\n";
+print "... Density tracking: ".($UseDensity == 1 ? "enabled" : "disabled")."\n";
 print "... Verbose: ".($Verbose == 1 ? "yes" : "no")."\n";
 print "\n";
 
@@ -484,9 +490,13 @@ if ($CallersLevel > 0)
 {
   $CMD .= "-c $CallersCFG ";
 }
+if ($UseDensity == 1)
+{
+  $CMD .= "-d ";
+}
 if ($MaxDistance ne "")
 {
-  $CMD .= "-d $MaxDistance ";
+  $CMD .= "-p $MaxDistance ";
 }
 if ($MinTimePct > 0)
 {

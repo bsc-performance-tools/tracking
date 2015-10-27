@@ -3,6 +3,8 @@ ChangeLog 'Tracking'
 2015-10-27 German Llort <german.llort@bsc.es>
 	* Fixed LD_LIBRARY_PATH environment setting to look for Paraver libraries under lib and lib64
 	* Fixed distribution of Python scripts
+	+ Added command-line parameter to enable the density tracker
+	* Changed deprecated symbols wx.PySimpleApp and wx.Color into wx.App and wx.Colour
 	* Upgraded version to 2.6.4
 
 2015-03-09 German Llort <german.llort@bsc.es>

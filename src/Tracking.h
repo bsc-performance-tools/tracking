@@ -48,7 +48,7 @@ class Tracking
 
     } FramesMatrix_t;
   
-    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, string prefix, bool reconstruct, int verbose);
+    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, bool use_density, string prefix, bool reconstruct, int verbose);
     ~Tracking();
 
     void CorrelateTraces();
@@ -118,13 +118,15 @@ class Tracking
 "\n"\
 "  -c <callers.cfg>           CFG filtering one level of callers to use the callstack tracker\n"\
 "\n"\
-"  -d <max-distance>          Maximum Epsilon distance to use the cross-classifier tracker\n"\
+"  -d                         Enable the density tracker\n"\
 "\n"\
 "  -h                         Prints this help\n"\
 "\n"\
 "  -m <min-time-pct>          Discard clusters below the given duration time percentage\n"\
 "\n"\
 "  -o                         Set the prefix for all the output files\n"\
+"\n"\
+"  -p <max-distance>          Maximum Epsilon distance to use the position tracker\n"\
 "\n"\
 "  -r                         Enable the trace reconstruction with tracked clusters\n"\
 "\n"\
