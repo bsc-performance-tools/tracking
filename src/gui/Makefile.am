@@ -9,13 +9,13 @@ ICONS_DIR    = icons
 
 PARAVER_CFGS = clusterid.cfg
 
-bin_SCRIPTS = callers_frame.py  data_manager.py  decorations.py  plotting_manager.py
+dist_bin_SCRIPTS = callers_frame.py  data_manager.py  decorations.py  plotting_manager.py
 
 EXTRA_DIST =               \
   $(GUI_LAUNCHER_TEMPLATE) \
   $(GUI_TEMPLATE)          \
   $(ICONS_DIR)             \
-  $(PARAVER_CFGS)
+  $(PARAVER_CFGS)          
 
 install-data-hook:
 	mkdir -p $(prefix)/bin
