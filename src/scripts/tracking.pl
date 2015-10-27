@@ -21,7 +21,7 @@ my $ListInput           = "";
 my $DimensionsToScale   = "";
 my $MinTimePct          = 0;
 my $OutputPrefix        = "";
-my $Reconstruct         = 0;
+my $Reconstruct         = 1;
 my $ScoreMinimum        = "";
 my $Verbose             = 0;
 my $MaxDistance         = 1.00;
@@ -168,10 +168,10 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
         exit;
       }
     }
-    case "r"
-    {
-      $Reconstruct = 1;
-    }
+    #case "r"
+    #{
+    #  $Reconstruct = 1;
+    #}
     case "s"
     {
       $i ++;
@@ -502,10 +502,10 @@ if ($MinTimePct > 0)
 {
   $CMD .= "-m $MinTimePct ";
 }
-#if ($Reconstruct == 1)
-#{
+if ($Reconstruct == 1)
+{
   $CMD .= "-r ";
-#}
+}
 if ($Threshold ne "")
 {
   if ($Threshold eq "any") 
