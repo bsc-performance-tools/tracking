@@ -3,6 +3,8 @@ ChangeLog 'Tracking'
 2015-10-30 German Llort <german.llort@bsc.es>
 	* Fixed bug in sequence alignment tracker (objects were incorrectly linked to self) 
 	* Fixed bug in filtering untracked objects when there was no objects untracked in a frame 
+	* Changed the algorithm that splits the rules based on the sequence tracker
+	- Removed hack that copied the libboost libraries from the paraver-kernel installation to $prefix/lib
 
 2015-10-27 German Llort <german.llort@bsc.es>
 	* Fixed LD_LIBRARY_PATH environment setting to look for Paraver libraries under lib and lib64

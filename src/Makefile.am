@@ -29,6 +29,3 @@ tracking_bin_CXXFLAGS  = $(BOOST_CPPFLAGS) -I$(ANN_DIR)/include -I$(SCORE_DIR)/i
 tracking_bin_LDFLAGS   = $(PARAVER_KERNEL_LDFLAGS) $(PARAVER_KERNEL_LIBS) $(PARAVER_KERNEL_RPATH) -R $(prefix)/lib
 tracking_bin_LDADD     = $(ANN_DIR)/src/libANNClassify.la $(SCORE_DIR)/libSequenceScore.la
 
-install-data-hook:
-	cp $(PARAVER_LIBSDIR)/paraver-kernel/*boost* $(prefix)/lib
-
