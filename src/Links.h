@@ -15,8 +15,8 @@ using std::pair;
 using std::string;
 using std::vector;
 
-typedef ClusterID_t            ObjectID_t;
-typedef ClustersSet_t          ObjectSet_t;
+typedef ClusterID_t           ObjectID_t;
+typedef ClustersSet_t         ObjectSet_t;
 typedef ObjectSet_t::iterator ObjectSet_iterator_t;
 typedef ObjectSet_iterator_t  ObjectLinks_iterator_t;
 
@@ -119,7 +119,7 @@ class DoubleLinks
 typedef vector<ObjectSet_t>        ObjectSequence_t;
 typedef ObjectSequence_t::iterator ObjectSequence_iterator_t;
 typedef vector<ObjectSequence_t>   SequenceLink_t;
-typedef SequenceLink_t::iterator    SequenceLink_iterator_t;
+typedef SequenceLink_t::iterator   SequenceLink_iterator_t;
 
 /**
  * This class represents bidirectionall links across ALL frames
@@ -129,17 +129,17 @@ class SequenceLink
   public:
     SequenceLink(vector<DoubleLinks *> &AllPairs, vector<ClustersInfo *> &clusters_info_data, double time_threshold);
 
-    int  GetTranslationTable(int trace, int total_clusters, map< TTypeValuePair, TTypeValuePair > &TranslationTable);
+    int GetTranslationTable(int trace, int total_clusters, map< TTypeValuePair, TTypeValuePair > &TranslationTable);
 
     void write(ostream &Channel, bool All, bool PrettyPrint);
 
   private:
-    SequenceLink_t    TrackedObjects;
-    SequenceLink_t    FilteredObjects;
-    SequenceLink_t    UntrackedObjects;
-    bool              AtLeastOneUntracked;
-    double            TimeThreshold;
-    int               NumFrames;
+    SequenceLink_t TrackedObjects;
+    SequenceLink_t FilteredObjects;
+    SequenceLink_t UntrackedObjects;
+    bool           AtLeastOneUntracked;
+    double         TimeThreshold;
+    int            NumFrames;
 
     void ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs);
     void Merge();
@@ -148,7 +148,6 @@ class SequenceLink
     void FilterByTime(double TimeThreshold);
     void write(ostream &Channel, SequenceLink_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter);
     void write(ostream &Channel, ObjectSequence_t &Sequence, string Prefix, string GroupDelimiter, string FrameDelimiter);
-
 
     vector<ClustersInfo *> &ClustersInfoData;
 };

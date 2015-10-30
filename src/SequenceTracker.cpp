@@ -39,7 +39,7 @@ void SequenceTracker::RunTracker()
   for (it = SequenceMatchings.begin(); it != SequenceMatchings.end(); it++)
   {
     ClusterID_t left_cluster  = it->first.first;
-    ClusterID_t right_cluster = it->first.first;
+    ClusterID_t right_cluster = it->first.second;
     int occurrences   = it->second;
 
     for (int i=0; i<occurrences; i++)

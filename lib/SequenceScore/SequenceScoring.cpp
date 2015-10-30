@@ -246,7 +246,7 @@ SequenceScoring::ComputeGlobalSequence()
         }
         else
         {
-          GlobalSequence[i][CurrentClusterValue] = GlobalSequence[i][CurrentClusterValue] + 1;
+          GlobalSequence[i][CurrentClusterValue] ++;
         }
       }
     }
@@ -261,9 +261,15 @@ SequenceScoring::ComputeGlobalSequence()
     for (it=GlobalSequence[i].begin(); it!=GlobalSequence[i].end(); ++it)
     {
       it->second = (it->second * 100) / ClusterSequences.size();
+/*
+      if (it->second == 0)
+      {
+        GlobalSequence[i].erase(it);
+      }
+*/
     }
 
-    /* DEBUG
+    /* DEBUG 
     int set_size = GlobalSequence[i].size();
     if (set_size > 1) cout << "[";
     int count = 0;
@@ -274,8 +280,7 @@ SequenceScoring::ComputeGlobalSequence()
       count ++;
     }
     if (set_size > 1) cout << "]";
-    cout << " " << endl;
-    */
+    cout << " " << endl; */
   }
 }
 
@@ -366,6 +371,11 @@ void SequenceScoring::TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScorin
            2 -> 3
            3 -> 2 */
 
+  /* DEBUG 
+  PrintSequence(GlobalSequence);
+  PrintSequence(SS2->GlobalSequence);
+  */
+
   /* Get the inverse mapping */
   DoubleLinks *UnivocalReverse = UnivocalLinks->Reverse();
 
@@ -415,7 +425,10 @@ void SequenceScoring::TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScorin
   {
     cout << Indexes2[i] << " ";
   }
-  cout << endl; */
+  cout << endl; 
+  */
+
+  if ((Indexes1.size() == 0) || (Indexes2.size() == 0)) return;
 
   /* Find pairs of these clusters in the sequence */
   for (int i = 0; i<Indexes1.size()-1; i++)
@@ -463,22 +476,24 @@ void SequenceScoring::TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScorin
         SubsequencesList.push_back( Subsequence2 );
       }
     }
-    /* 
-    cout << "[DEBUG] Found " << SubsequencesList.size() << " subsequences from corresponding clusters " << CorrespondingFrom << " and " << CorrespondingTo << " in Sequence 2:" << endl;
+    /*
+    cout << "[DEBUG] Found " << SubsequencesList.size() << " subsequences from corresponding clusters " << *(CorrespondingFrom.begin()) << " and " << *(CorrespondingTo.begin()) << " in Sequence 2:" << endl;
     */
+    
     for (int k=0; k<SubsequencesList.size(); k++)
     {
-      /*
+      /* DEBUG 
       cout << " * Subsequence #" << k+1 << ": " << endl;
-      PrintSequence( SubsequencesList[k] );
+      PrintSequence( SubsequencesList[k] ); 
       */
 
       GetMatchingsBetweenSequences( Subsequence, SubsequencesList[k], SequenceMatchings );
     } 
   }
-  /*
+  /* DEBUG
   cout << "[DEBUG] Matchings between subsequences:" << endl;
-  PrintMatchings(SequenceMatchings); */
+  PrintMatchings(SequenceMatchings); 
+  */
 }
 
 /***************************************************************************

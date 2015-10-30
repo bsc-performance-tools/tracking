@@ -409,7 +409,6 @@ Link * CorrelationMatrix::getReverseCorrelation(int cluster_id, double min_likel
 #endif
 
 
-
 int CorrelationMatrix::getCorrelationSeenCount(int fromCluster, int toCluster)
 {
   return Matrix[fromCluster][toCluster].SeenCount;
@@ -424,7 +423,6 @@ int CorrelationMatrix::getNumberOfClusters()
 {
   return N-FIRST_CLUSTER;
 }
-
 
 
 ObjectLinks * CorrelationMatrix::getLinks(int cluster_id, double min_likeliness)
@@ -471,7 +469,6 @@ ObjectLinks * CorrelationMatrix::getLinks(int cluster_id, double min_likeliness)
   return links;
 }
 
-#if 1
 FrameLinks * CorrelationMatrix::getLinks( double min_likeliness )
 {
   FrameLinks *Links = new FrameLinks();
@@ -489,4 +486,3 @@ FrameLinks * CorrelationMatrix::getLinks( double min_likeliness )
   }
   return Links;
 }
-#endif

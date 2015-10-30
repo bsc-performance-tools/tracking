@@ -285,14 +285,13 @@ DoubleLinks::~DoubleLinks()
  */
 DoubleLinks * DoubleLinks::Split(DoubleLinks *Specialized)
 {
-/*
+  /* DEBUG 
   cout << "[DEBUG] DoubleLinks::Split ====================================================\n";
   cout << "RULES:\n";
   print();
   cout << "SPECIALIZED:\n";
   Specialized->print();
-  cout << "==============================================================================\n";
-*/
+  cout << "==============================================================================\n"; */
 
   DoubleLinks *res = new DoubleLinks();
   DoubleLinks_iterator_t it;
@@ -302,65 +301,62 @@ DoubleLinks * DoubleLinks::Split(DoubleLinks *Specialized)
     ObjectSet_t Left  = GetFrom(it);
     ObjectSet_t Right = GetTo(it);
 
-    int over = 0;
-    while (over < Specialized->size())
+    /* DEBUG
+    cout << "Considering ground rule ";
+    print_objects_set(cout, Left, ", ");
+    cout << " -> ";
+    print_objects_set(cout, Right, ", ");
+    cout << endl; */
+
+    DoubleLinks_iterator_t it2;
+    it2 = Specialized->begin();
+    while (it2 != Specialized->end()) 
     {
-        int min_size  = -1;
-	int min_index = -1;
-	int cur_count =  0;
-      
-        DoubleLinks_iterator_t it2;
-        for (it2=Specialized->begin(); it2!=Specialized->end(); ++it2)
-        {
-          ObjectSet_t Left2    = Specialized->GetFrom(it2);
-          ObjectSet_t Right2   = Specialized->GetTo(it2);
-          int          cur_size = 0;
+      ObjectSet_t Left2    = Specialized->GetFrom(it2);
+      ObjectSet_t Right2   = Specialized->GetTo(it2);
 
-	  if ((Left2.size() == 1) && ( Right2.size() == 1))
-          {
-		min_size  = 2;
-		min_index = cur_count;
-		break;
-          }
-	  else
-	  {
-            cur_size = Left2.size() + Right2.size();
-            if ((min_size == -1) || (cur_size > min_size))
-	    {
-		min_size  = cur_size;
-		min_index = cur_count;
-	    }
-	  }
-	  cur_count ++;
-        }
+      /* DEBUG
+      cout << "--- Checking for possible specializations using rule ";
+      print_objects_set(cout, Left2, ", ");
+      cout << " -> ";
+      print_objects_set(cout, Right2, ", ");
+      cout << endl; */
 
-        ObjectSet_t Left2, Right2;
-	Left2  = Specialized->GetFrom(min_index);
-	Right2 = Specialized->GetTo(min_index);
+      if ( (subset(Left, Left2) == 2) || (subset(Right, Right2) == 2) )
+      {
+        ObjectSet_t SubstractLeft, SubstractRight;
 
-        if ( (subset(Left, Left2) == 2) ||(subset(Right, Right2) == 2) )
-        {
-          ObjectSet_t SubstractLeft, SubstractRight;
+        set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(),
+          std::inserter(SubstractLeft, SubstractLeft.end()));
+         
+        set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(),
+          std::inserter(SubstractRight, SubstractRight.end()));
 
-          set_difference(Left.begin(), Left.end(), Left2.begin(), Left2.end(),
-            std::inserter(SubstractLeft, SubstractLeft.end()));
-          
-	  set_difference(Right.begin(), Right.end(), Right2.begin(), Right2.end(),
-            std::inserter(SubstractRight, SubstractRight.end()));
+        Left  = SubstractLeft;
+        Right = SubstractRight;
 
-          Left  = SubstractLeft;
-          Right = SubstractRight;
+        /* DEBUG 
+        cout << "--- Found an specialization, ground rule reduced to ";
+        print_objects_set(cout, Left, ", ");
+        cout << " -> ";
+        print_objects_set(cout, Right, ", ");
+        cout << endl; */
 
-          res->add( Left2, Right2 );
-        }
-	over++;
+        res->add( Left2, Right2 );
+        it2 = Specialized->begin();
+      }
+      else
+      {
+        /* DEBUG
+        cout << "--- No possible specializations found" << endl; */
+        it2 ++;
+      }
     }
     if ((Left.size() > 0) || (Right.size() > 0))
     {
       res->add( Left, Right );
     }
   }  
-
   res->Sort();
 
   res->Merge();
@@ -400,7 +396,8 @@ void DoubleLinks::Sort(void)
   DoubleLinks_t Unsorted = Links;
   DoubleLinks_iterator_t it;
   
-  print();
+  /* DEBUG -- rules before sorting
+  print(); */
 
   while (Unsorted.size() > 0)
   {
@@ -410,8 +407,11 @@ void DoubleLinks::Sort(void)
     for (it = Unsorted.begin(); it != Unsorted.end(); ++ it)
     {
       ObjectSet_t Left = GetFrom( it );
+
+      /* DEBUG
       print_objects_set(cerr, Left, ", " );
-      cerr << endl;
+      cerr << endl; */
+
       if (Left.size() > 0)
       {
         ObjectSet_iterator_t it2;
@@ -431,9 +431,8 @@ void DoubleLinks::Sort(void)
         min_index = it;
       }
     }
-    cerr << "Unsorted.size=" << Unsorted.size() << " min_cluster=" << min_cluster << endl;
+    //cerr << "Unsorted.size=" << Unsorted.size() << " min_cluster=" << min_cluster << endl;
     Sorted.push_back( make_pair(GetFrom(min_index), GetTo(min_index)) );
-    cerr << "redone" << endl;
 
     Unsorted.erase( min_index );
   }
@@ -697,7 +696,7 @@ void SequenceLink::ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs)
 {
   int count = 0;
   DoubleLinks_iterator_t it;
-  AtLeastOneUntracked = false;
+  //AtLeastOneUntracked = false;
 
   DoubleLinks *First = AllPairs[0];
 
@@ -820,7 +819,10 @@ void SequenceLink::FindUntracked()
   {
     int NumUntrackedObjectsPerFrame = ClustersInfoData[Frame]->GetNumClusters() - NumTrackedObjects;
 
-    if (NumUntrackedObjectsPerFrame > 0)
+    /* DEBUG 
+    cout << "[DEBUG] Frame: " << Frame << " Untracked objects: " << NumUntrackedObjectsPerFrame << endl; */
+
+//    if (NumUntrackedObjectsPerFrame > 0) 
     {
       ObjectSet_t Tracked;
       ObjectSet_t Untracked;
@@ -843,29 +845,22 @@ void SequenceLink::FindUntracked()
         }
       }
 
-      /* DEBUG -- print untracked objects per frame
-      cout << "[DEBUG] Frame " << Frame << ", untracked objects: " << UntrackedObjects.size() << " [ "; 
-      ObjectSet_iterator_t it;
-      for (it = UntrackedObjects.begin(); it != UntrackedObjects.end(); ++ it)
-      {
-        cout << *it << " ";
-      }
-      cout << "]" << endl; */
-      
+      /*
       if (Untracked.size() > 0)
       {
         AtLeastOneUntracked = true;
       }
+      */
       tmp.push_back( Untracked );
     }
   }
 
-  if (AtLeastOneUntracked)
-  {
+//  if (AtLeastOneUntracked)
+//  {
     UntrackedObjects.push_back( tmp );
     /* DEBUG */
     write(cout, UntrackedObjects, "   ", "+", " <-> "); 
-  }
+//  }
 }
 
 void SequenceLink::FilterByTime(double TimeThreshold)

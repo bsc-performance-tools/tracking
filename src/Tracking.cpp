@@ -221,7 +221,6 @@ void Tracking::RunTrackers1()
 
       Alignments.push_back( new ClustersAlignment( InputAlignments[i], InputCINFOs[i] ) );
 
-      cout << endl;
     }
     if (UseCallers)
     {
@@ -236,6 +235,7 @@ void Tracking::RunTrackers1()
       cout << endl;
     }
   }
+  cout << endl;
 
   /* Run the SPMDiness tracker on each trace */
   if (UseAlignment)
@@ -592,6 +592,7 @@ void Tracking::CompareFrames(int frame1, int frame2)
 
 void Tracking::Recolor()
 {
+  int rc;
   vector<string> InPlots;
 
   /* Clean previous files */
@@ -613,7 +614,7 @@ void Tracking::Recolor()
   {
     cout << "[DEBUG] CMD=" << CMD << endl;
   }
-  system(CMD.c_str());
+  rc = system(CMD.c_str());
   cout << endl;
 }
 

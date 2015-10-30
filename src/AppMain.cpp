@@ -35,7 +35,6 @@ int ReadArgs(int argc, char *argv[])
 {
   int j = 1;
 
-  fprintf(stderr, "argc: %d\n", argc);
   if ((argc == 1) || ((argc == 2) && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))))
   {
 
