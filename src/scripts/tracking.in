@@ -28,7 +28,7 @@ fi
 
 export LD_LIBRARY_PATH=$PARAVER_HOME/lib/paraver-kernel:$PARAVER_HOME/lib/ptools_common_files:$PARAVER_HOME/lib/wxparaver:$PARAVER_HOME/lib64/paraver-kernel:$PARAVER_HOME/lib64/ptools_common_files:$PARAVER_HOME/lib64/wxparaver:$LD_LIBRARY_PATH
 
-export LD_LIBRARY_PATH=$TRACKING_HOME/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$TRACKING_HOME/lib:$TRACKING_HOME/lib64:$LD_LIBRARY_PATH
 
 perl $TRACKING_HOME/bin/tracking.pl $*
 
