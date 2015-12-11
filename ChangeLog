@@ -2,6 +2,7 @@ ChangeLog 'Tracking'
 
 2015-12-11 German Llort <german.llort@bsc.es>
 	+ Added documentation
+	* Updated boost.m4 macros
 
 2015-11-06 German Llort <german.llort@bsc.es>
 	* Fixed LD_LIBRARY_PATH environment setting to look for ANN libraries under lib and lib64
