@@ -66,7 +66,7 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(short int)
 AC_CHECK_TYPES([int64_t, uint64_t, int8_t, uint8_t, int32_t, uint32_t, int16_t, uint16_t])
 
-AC_CONFIG_FILES([Makefile lib/Makefile lib/SequenceScore/Makefile src/Makefile src/scripts/Makefile src/gui/Makefile])
+AC_CONFIG_FILES([Makefile lib/Makefile lib/SequenceScore/Makefile doc/Makefile src/Makefile src/scripts/Makefile src/gui/Makefile])
 
 AC_CONFIG_SUBDIRS([lib/ANNClassify])
 
