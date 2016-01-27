@@ -3,5 +3,7 @@ Read file INSTALL for general installation instructions.
 
 Package dependencies
 --------------------
-* MRNet 3.1.0 or higher - http://www.paradyn.org/mrnet/#downloads
+* Paraver 4.5.x or higher - http://www.bsc.es/computer-sciences/performance-tools/downloads
+
+* BSC Clustering Suite 2.6.x or higher - http://www.bsc.es/computer-sciences/performance-tools/downloads
 

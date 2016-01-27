@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2016-01-27 German Llort <german.llort@bsc.es>
+	* Updated package dependencies in the README.
+
 2015-12-11 German Llort <german.llort@bsc.es>
 	+ Added documentation
 	* Updated boost.m4 macros
