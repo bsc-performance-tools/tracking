@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-use Switch;
-
 my $ARGC = @ARGV;
 
 my $SuffixClustersData   = ".DATA.csv";
@@ -117,101 +115,99 @@ if ($ARGC < 2)
 my $i = 0;
 for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
 {
-  switch (substr($ARGV[$i], 1, 1))
+  $flag = substr($ARGV[$i], 1, 1);
+  if ($flag == "a")
   {
-    case "a"
+    $i ++;
+    $ScoreMinimum = $ARGV[$i];
+  }
+  elsif ($flag == "c")
+  {
+    $i ++;
+    $CallersLevel = $ARGV[$i];
+    if (($CallersLevel == 0 && $CallersLevel ne '0') || ($CallersLevel <= 0))
     {
-      $i ++;
-      $ScoreMinimum = $ARGV[$i];
-    }
-    case "c"
+      print "*** Error: -c: Callers level has to be greater than zero\n";
+      exit;
+    } 
+  }
+  elsif ($flag == "d")
+  {
+    $UseDensity = 1
+  }
+  elsif ($flag == "l") 
+  {
+    $i ++;
+    $ListInput = $ARGV[$i];
+  }
+  elsif ($flag == "m")
+  {
+    $i ++;
+    $MinTimePct = $ARGV[$i];
+    if (($MinTimePct == 0 && $MinTimePct ne '0') || ($MinTimePct < 0) || ($MinTimePct > 100))
     {
-      $i ++;
-      $CallersLevel = $ARGV[$i];
-      if (($CallersLevel == 0 && $CallersLevel ne '0') || ($CallersLevel <= 0))
-      {
-        print "*** Error: -c: Callers level has to be greater than zero\n";
-        exit;
-      } 
-    }
-    case "d"
-    {
-      $UseDensity = 1
-    }
-    case "l"
-    {
-      $i ++;
-      $ListInput = $ARGV[$i];
-    }
-    case "m"
-    {
-      $i ++;
-      $MinTimePct = $ARGV[$i];
-      if (($MinTimePct == 0 && $MinTimePct ne '0') || ($MinTimePct < 0) || ($MinTimePct > 100))
-      {
-        print "*** Error: -m: Minimum cluster time percentage has to be between 0 and 100\n";
-        exit;
-      }
-    }
-    case "o"
-    {
-      $i ++;
-      $OutputPrefix = $ARGV[$i];
-    }
-    case "p"
-    {
-      $i ++;
-      $MaxDistance = $ARGV[$i];
-      if (($MaxDistance == 0 && $MaxDistance ne '0') || ($MaxDistance < 0) || ($MaxDistance > 1))
-      {
-        print "*** Error: -p: Distance has to be between 0 and 1\n";
-        exit;
-      }
-    }
-    #case "r"
-    #{
-    #  $Reconstruct = 1;
-    #}
-    case "s"
-    {
-      $i ++;
-      $DimensionsToScale = $ARGV[$i];
-    }
-    case "t"
-    {
-      $i ++;
-      $Threshold = $ARGV[$i];
-      $Threshold = lc $Threshold;
-      if ((($Threshold == 0 && $Threshold ne '0') || ($Threshold < 0) || ($Threshold > 100)) && ($Threshold ne 'any') && ($Threshold ne 'first'))
-      {
-        print "*** Error: -t: Threshold has to be a percentage between 0 and 100, 'any' or 'first'\n";
-        exit;
-      }
-    }
-    case "v"
-    {
-      $Verbose = 1;
-      if (substr($ARGV[$i], 2, 1) eq 'v')
-      {
-        $Verbose ++;
-      }
-    }
-    case "x"
-    {
-      $i ++;
-      $ClusteringConfig = $ARGV[$i];
-      if (! -e $ClusteringConfig)
-      {
-        print "*** Error: -x: Can't find clustering definition XML file '$ClusteringConfig'\n";
-        exit;
-      }
-    }
-    else
-    {
-      PrintUsage();
-      print "*** INVALID PARAMETER ".$ARGV[$i]."\n";
+      print "*** Error: -m: Minimum cluster time percentage has to be between 0 and 100\n";
       exit;
     }
+  }
+  elsif ($flag == "o")
+  {
+    $i ++;
+    $OutputPrefix = $ARGV[$i];
+  }
+  elsif ($flag == "p")
+  {
+    $i ++;
+    $MaxDistance = $ARGV[$i];
+    if (($MaxDistance == 0 && $MaxDistance ne '0') || ($MaxDistance < 0) || ($MaxDistance > 1))
+    {
+      print "*** Error: -p: Distance has to be between 0 and 1\n";
+      exit;
+    }
+  }
+  #elsif ($flag == "r")
+  #{
+  #  $Reconstruct = 1;
+  #}
+  elsif ($flag == "s")
+  {
+    $i ++;
+    $DimensionsToScale = $ARGV[$i];
+  }
+  elsif ($flag == "t")
+  {
+    $i ++;
+    $Threshold = $ARGV[$i];
+    $Threshold = lc $Threshold;
+    if ((($Threshold == 0 && $Threshold ne '0') || ($Threshold < 0) || ($Threshold > 100)) && ($Threshold ne 'any') && ($Threshold ne 'first'))
+    {
+      print "*** Error: -t: Threshold has to be a percentage between 0 and 100, 'any' or 'first'\n";
+      exit;
+    }
+  }
+  elsif ($flag == "v")
+  {
+    $Verbose = 1;
+    if (substr($ARGV[$i], 2, 1) eq 'v')
+    {
+      $Verbose ++;
+    }
+  }
+  elsif ($flag == "x")
+  {
+    $i ++;
+    $ClusteringConfig = $ARGV[$i];
+    if (! -e $ClusteringConfig)
+    {
+      print "*** Error: -x: Can't find clustering definition XML file '$ClusteringConfig'\n";
+      exit;
+    }
+  }
+  else
+  {
+    PrintUsage();
+    print "*** INVALID PARAMETER ".$ARGV[$i]."\n";
+    exit;
   }
 }	
 
