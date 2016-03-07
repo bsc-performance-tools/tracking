@@ -116,12 +116,12 @@ my $i = 0;
 for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
 {
   $flag = substr($ARGV[$i], 1, 1);
-  if ($flag == "a")
+  if ($flag eq "a")
   {
     $i ++;
     $ScoreMinimum = $ARGV[$i];
   }
-  elsif ($flag == "c")
+  elsif ($flag eq "c")
   {
     $i ++;
     $CallersLevel = $ARGV[$i];
@@ -131,16 +131,16 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       exit;
     } 
   }
-  elsif ($flag == "d")
+  elsif ($flag eq "d")
   {
     $UseDensity = 1
   }
-  elsif ($flag == "l") 
+  elsif ($flag eq "l") 
   {
     $i ++;
     $ListInput = $ARGV[$i];
   }
-  elsif ($flag == "m")
+  elsif ($flag eq "m")
   {
     $i ++;
     $MinTimePct = $ARGV[$i];
@@ -150,12 +150,12 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       exit;
     }
   }
-  elsif ($flag == "o")
+  elsif ($flag eq "o")
   {
     $i ++;
     $OutputPrefix = $ARGV[$i];
   }
-  elsif ($flag == "p")
+  elsif ($flag eq "p")
   {
     $i ++;
     $MaxDistance = $ARGV[$i];
@@ -165,16 +165,16 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       exit;
     }
   }
-  #elsif ($flag == "r")
+  #elsif ($flag eq "r")
   #{
   #  $Reconstruct = 1;
   #}
-  elsif ($flag == "s")
+  elsif ($flag eq "s")
   {
     $i ++;
     $DimensionsToScale = $ARGV[$i];
   }
-  elsif ($flag == "t")
+  elsif ($flag eq "t")
   {
     $i ++;
     $Threshold = $ARGV[$i];
@@ -185,7 +185,7 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       exit;
     }
   }
-  elsif ($flag == "v")
+  elsif ($flag eq "v")
   {
     $Verbose = 1;
     if (substr($ARGV[$i], 2, 1) eq 'v')
@@ -193,7 +193,7 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
       $Verbose ++;
     }
   }
-  elsif ($flag == "x")
+  elsif ($flag eq "x")
   {
     $i ++;
     $ClusteringConfig = $ARGV[$i];
@@ -218,13 +218,15 @@ if ($ListInput ne "")
 {
   open(LIST, $ListInput) or die("*** Error: Could not open file '$ListInput': $!\n");
   @InputTraces = <LIST>;
+  $line_count = @InputTraces;
   close LIST;
-  if ($InputTraces < 2)
+  if ($line_count < 2)
   {
     PrintUsage();
     print "*** Error: Pass two traces or more to track!\n";
     exit;
   }
+  chomp @InputTraces;
 }
 elsif ($ARGC - $i < 2)
 {

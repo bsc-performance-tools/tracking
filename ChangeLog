@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2016-03-07 German Llort <german.llort@bsc.es>
+	* Fixed bug parsing tracking parameters
+
 2016-03-03 German Llort <german.llort@bsc.es>
 	* Removed the dependency with the Perl's module Switch
 
