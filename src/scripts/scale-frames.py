@@ -182,7 +182,8 @@ for CurrentTrace in range(0, TraceNo):
 
   ### Rewrite the plots with scaled ranges
   for Plot in AllPlots:
-    if ( Plot.split(".")[-2] == "Normalized" ):
+
+    if ( Plot.split(".")[-2] == "Normalized" ) or (".SAMPLE_DATA." in Plot):
       continue
 
     OutputPlot = Plot + SuffixScaledPlot

@@ -24,6 +24,7 @@ my $ScoreMinimum        = "";
 my $Verbose             = 0;
 my $MaxDistance         = 1.00;
 my $Threshold           = "";
+my $ManualMatchingsFile = "";
 
 my @InputTraces           = ();
 my $NumberOfTraces        = 0;
@@ -43,6 +44,8 @@ sub PrintUsage
   print "  -c CALLER_LEVEL\n";
   print "        Enable the callstack tracker at the specified depth.\n";
   print "  -d    Enable the density tracker.\n";
+  print "  -f MATCHINGS_FILE\n";
+  print "        Enable the manual mode using the matchings specified in the file.\n";
   print "  -m MIN_TIME_PCT\n";
   print "        Discard the clusters below the given duration time percentage.\n";
   print "  -o OUTPUT_PREFIX\n";
@@ -134,6 +137,11 @@ for ($i = 0; ($i < $ARGC) && (substr($ARGV[$i], 0, 1) eq '-'); $i++)
   elsif ($flag eq "d")
   {
     $UseDensity = 1
+  }
+  elsif ($flag eq "f")
+  {
+    $i++;
+    $ManualMatchingsFile = $ARGV[$i];
   }
   elsif ($flag eq "l") 
   {
@@ -356,7 +364,7 @@ print "... Position tracking: ".($MaxDistance > 0 ? "cross-classifying with radi
 print "... Callers tracking: ".($CallersLevel > 0 ? "enabled for level $CallersLevel" : "disabled")."\n";
 print "... Alignment tracking: ".($ScoreMinimum ne "" ? "enabled above score $ScoreMinimum" : "disabled")."\n";
 print "... Density tracking: ".($UseDensity == 1 ? "enabled" : "disabled")."\n";
-print "... Verbose: ".($Verbose == 1 ? "yes" : "no")."\n";
+print "... Verbose: ".($Verbose >= 1 ? "yes" : "no")."\n";
 print "\n";
 
 #
@@ -370,6 +378,7 @@ if ($DimensionsToScale ne "")
   $CMD .= "-s $DimensionsToScale ";
 }
 $CMD .= join(" ", @InputTraces);
+print $CMD;
 system($CMD);
 if ($? == 0) 
 {
@@ -491,6 +500,10 @@ if ($CallersLevel > 0)
 if ($UseDensity == 1)
 {
   $CMD .= "-d ";
+}
+if ($ManualMatchingsFile ne "")
+{
+  $CMD .= "-f $ManualMatchingsFile ";
 }
 if ($MaxDistance ne "")
 {

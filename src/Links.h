@@ -128,7 +128,9 @@ class SequenceLink
 {
   public:
     SequenceLink(vector<DoubleLinks *> &AllPairs, vector<ClustersInfo *> &clusters_info_data, double time_threshold);
+    SequenceLink(vector<ClustersInfo *> &clusters_info_data);
 
+    void AddSequence(string Sequence);
     int GetTranslationTable(int trace, int total_clusters, map< TTypeValuePair, TTypeValuePair > &TranslationTable);
 
     void write(ostream &Channel, bool All, bool PrettyPrint);

@@ -13,22 +13,38 @@ using std::ofstream;
 #include "TraceReconstructor.h"
 #include <boost/algorithm/string/join.hpp>
 
-Tracking::Tracking(vector<string> traces, vector<ClusterID_t> num_clusters_to_track, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, bool use_density, string prefix, bool reconstruct, int verbose)
+Tracking::Tracking(vector<string>      traces, 
+                   vector<ClusterID_t> num_clusters_to_track, 
+                   double              min_time_pct, 
+                   double              threshold, 
+                   double              max_distance, 
+                   string              callers_cfg, 
+                   double              min_score, 
+                   bool                use_density, 
+                   string              prefix, 
+                   bool                reconstruct, 
+                   string              manual_matchings_file,
+                   int                 verbose)
 {
   /* Configure the tracking algorithm and the different trackers */
-  InputTraces        = traces;
-  NumClustersToTrack = num_clusters_to_track;
-  NumberOfTraces     = traces.size();
-  Epsilon            = 0.018;
-  CallersCFG         = callers_cfg;
-  OutputPrefix       = prefix;
-  Reconstruct        = reconstruct;
-  Verbose            = verbose;
-  FinalSequence      = NULL;
-  MinimumScore       = min_score;
-  CrossDistance      = max_distance;
-  Threshold          = threshold;
-  TimeThresholdAfter = min_time_pct;
+  InputTraces         = traces;
+  NumClustersToTrack  = num_clusters_to_track;
+  NumberOfTraces      = traces.size();
+  Epsilon             = 0.018;
+  CallersCFG          = callers_cfg;
+  OutputPrefix        = prefix;
+  Reconstruct         = reconstruct;
+  ManualMatchingsFile = manual_matchings_file;
+  if (ManualMatchingsFile != "")
+  {
+    ManualMode = true;
+  }
+  Verbose             = verbose;
+  FinalSequence       = NULL;
+  MinimumScore        = min_score;
+  CrossDistance       = max_distance;
+  Threshold           = threshold;
+  TimeThresholdAfter  = min_time_pct;
   TrackersAppliedAtRound1.clear();
   ClustersInfoData.clear();
 
@@ -186,19 +202,26 @@ void Tracking::PrepareFileNames()
 
 void Tracking::CorrelateTraces()
 {
-  /* Run density, distance, SPMD and callers trackers */
-  RunTrackers1();
+  if (ManualMode)
+  {
+    BuildFinalSequenceFromFile();
+  }
+  else
+  {
+    /* Run density, distance, SPMD and callers trackers */
+    RunTrackers1();
  
-  /* Merge their results */
-  CombineTrackers1();
+    /* Merge their results */
+    CombineTrackers1();
 
-  /* Run the sequence tracker */ 
-  RunTrackers2();
+    /* Run the sequence tracker */ 
+    RunTrackers2();
 
-  /* Merge with previous results */
-  CombineTrackers2();
+    /* Merge with previous results */
+    CombineTrackers2();
 
-  BuildFinalSequence();
+    BuildFinalSequence();
+  }
 
   Recolor();
 
@@ -418,6 +441,36 @@ void Tracking::BuildFinalSequence()
   FinalSequence->write(fd,   true, false);
 
   fd.close();
+}
+
+void Tracking::BuildFinalSequenceFromFile()
+{
+  string       Sequence, Token;
+  stringstream SequenceStream;
+
+  cout << endl << "+ Loading the clusters sequences from file..." << endl << endl;
+
+  ifstream manual_input;
+  manual_input.open(ManualMatchingsFile.c_str(), ios_base::in);
+  if (!manual_input)
+  {
+    cerr << "Error: Unable to open clusters sequences file '"+ManualMatchingsFile+"'";
+    exit(-1);
+  }
+
+  unlink(OutputSequenceFile.c_str());
+  ofstream fd;
+  fd.open (OutputSequenceFile.c_str(), ios::out | ios::trunc);
+
+  FinalSequence = new SequenceLink(ClustersInfoData);
+
+  while (getline(manual_input, Sequence))
+  {
+    FinalSequence->AddSequence( Sequence );
+  }
+
+  FinalSequence->write(cout, true, true);
+  FinalSequence->write(fd,   true, false);
 }
 
 void Tracking::CompareFrames(int frame1, int frame2)

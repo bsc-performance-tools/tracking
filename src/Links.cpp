@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 using std::cerr;
 using std::cout;
@@ -8,6 +9,8 @@ using std::endl;
 using std::make_pair;
 using std::ostream;
 using std::string;
+using std::istringstream;
+using std::stringstream;
 
 #include "ClusterIDs.h"
 #include "Links.h"
@@ -690,6 +693,39 @@ SequenceLink::SequenceLink(vector<DoubleLinks *> &AllPairs, vector<ClustersInfo 
   TimeThreshold = time_threshold;
 
   ComputeGlobalSequences(AllPairs);
+}
+
+SequenceLink::SequenceLink(vector<ClustersInfo *> &clusters_info_data) : ClustersInfoData(clusters_info_data)
+{
+  NumFrames     = clusters_info_data.size();
+  TimeThreshold = 0;
+}
+
+void SequenceLink::AddSequence(string Sequence)
+{
+  string FrameClusters, Cluster;
+  stringstream SequenceStream;
+  ObjectSequence_t current_sequence;
+
+  SequenceStream << Sequence;
+  while (getline(SequenceStream, FrameClusters, ';'))
+  {
+    ObjectSet_t current_set;
+    stringstream FrameClustersStream;
+
+    FrameClustersStream << FrameClusters;
+    while (getline(FrameClustersStream, Cluster, ','))
+    {
+      int ClusterID;
+
+      istringstream ssCluster( Cluster );
+      (ssCluster >> ClusterID);
+
+      current_set.insert( ClusterID );
+    }
+    current_sequence.push_back( current_set );
+  } 
+  TrackedObjects.push_back( current_sequence );
 }
 
 void SequenceLink::ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs)

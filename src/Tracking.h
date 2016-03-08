@@ -48,11 +48,24 @@ class Tracking
 
     } FramesMatrix_t;
   
-    Tracking(vector<string> traces, vector<ClusterID_t> last_clusters, double min_time_pct, double threshold, double max_distance, string callers_cfg, double min_score, bool use_density, string prefix, bool reconstruct, int verbose);
+    Tracking(vector<string>      traces, 
+             vector<ClusterID_t> last_clusters, 
+             double              min_time_pct, 
+             double              threshold, 
+             double              max_distance, 
+             string              callers_cfg, 
+             double              min_score, 
+             bool                use_density, 
+             string              prefix, 
+             bool                reconstruct, 
+             string              manual_matchings_file,
+             int                 verbose);
+
     ~Tracking();
 
     void CorrelateTraces();
     void BuildFinalSequence();
+    void BuildFinalSequenceFromFile();
     // void GeneratePlots();
     void Recolor();
     void ReconstructTraces();
@@ -93,6 +106,8 @@ class Tracking
     set<string> TrackersAppliedAtRound1;
     string OutputSequenceFile;
     double TimeThresholdAfter;
+    bool ManualMode;
+    string ManualMatchingsFile;
 
     void PrepareFileNames();
     void CompareFrames(int frame1, int frame2);
@@ -119,6 +134,8 @@ class Tracking
 "  -c <callers.cfg>           CFG filtering one level of callers to use the callstack tracker\n"\
 "\n"\
 "  -d                         Enable the density tracker\n"\
+"\n"\
+"  -f <matchings-file>        Enable the manual mode using the matchings specified in the file\n"\
 "\n"\
 "  -h                         Prints this help\n"\
 "\n"\

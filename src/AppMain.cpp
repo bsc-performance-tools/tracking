@@ -14,16 +14,17 @@ using std::istringstream;
 #include "ClusterIDs.h"
 #include "Tracking.h"
 
-string CallersCFG     = "";
-bool   CallersCFGRead = false;
-bool   Reconstruct    = false;
-int    Verbose        = 0;
-string OutputPrefix   = "";
-double MinimumScore   = DEFAULT_MIN_SCORE;
-double CrossDistance  = DEFAULT_CROSS_DISTANCE;
-double Threshold      = DEFAULT_THRESHOLD;
-double MinTimePct     = 0;
-bool   UseDensity     = false;
+string CallersCFG          = "";
+bool   CallersCFGRead      = false;
+bool   Reconstruct         = false;
+int    Verbose             = 0;
+string OutputPrefix        = "";
+double MinimumScore        = DEFAULT_MIN_SCORE;
+double CrossDistance       = DEFAULT_CROSS_DISTANCE;
+double Threshold           = DEFAULT_THRESHOLD;
+double MinTimePct          = 0;
+bool   UseDensity          = false;
+string ManualMatchingsFile = "";
 
 void PrintUsage(char* ApplicationName)
 {
@@ -62,6 +63,10 @@ int ReadArgs(int argc, char *argv[])
           break;
         case 'd':
           UseDensity = true;
+          break;
+        case 'f':
+          j++;
+          ManualMatchingsFile = argv[j];
           break;
         case 'h':
           PrintUsage(basename(argv[0]));
@@ -137,7 +142,7 @@ int main(int argc, char **argv)
     NumClustersToTrack.push_back(LastClusterForTrace);
   }
 
-  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, MinTimePct, Threshold, CrossDistance, CallersCFG, MinimumScore, UseDensity, OutputPrefix, Reconstruct, Verbose);
+  Tracking *ClustersTracking = new Tracking(TracesArray, NumClustersToTrack, MinTimePct, Threshold, CrossDistance, CallersCFG, MinimumScore, UseDensity, OutputPrefix, Reconstruct, ManualMatchingsFile, Verbose);
 
   ClustersTracking->CorrelateTraces();
   delete ClustersTracking;

@@ -1,5 +1,10 @@
 ChangeLog 'Tracking'
 
+2016-03-08 German Llort <german.llort@bsc.es>
+	* Upgraded version to 2.6.5
+	* Fixed bug in the scale-frames.py script so as not to scale the plots with sample points when clustering is used with flag "-m", which in turns avoids a later error of having more plots than input traces.
+	+ Added a manual tracking mode that can be enabled with flag -f 
+
 2016-03-07 German Llort <german.llort@bsc.es>
 	* Fixed bug parsing tracking parameters
 
