@@ -303,10 +303,16 @@ AC_DEFUN([AX_PROG_PARAVER],
   )
   AX_FIND_INSTALLATION([PARAVER], [$paraver_paths], [paraver])
   if test "$PARAVER_INSTALLED" = "yes" ; then
-    PARAVER_KERNEL_INCLUDES="-I${PARAVER_INCLUDES} -I${PARAVER_HOME}/../common-files ${BOOST_CPPFLAGS}"
-    PARAVER_KERNEL_LDFLAGS="-L${PARAVER_LIBSDIR}/paraver-kernel -L${PARAVER_LIBSDIR}/ptools_common_files -L${PARAVER_LIBSDIR}/wxparaver"
-    PARAVER_KERNEL_LIBS="-lparaver-kernel -lparaver-api -lptools_common_files"
-    PARAVER_KERNEL_RPATH="-R ${PARAVER_LIBSDIR}/paraver-kernel -R ${PARAVER_LIBSDIR}/ptools_common_files -R ${PARAVER_LIBSDIR}/wxparaver"
+    dnl PARAVER_KERNEL_INCLUDES="-I${PARAVER_INCLUDES} -I${PARAVER_HOME}/../common-files ${BOOST_CPPFLAGS}"
+    dnl PARAVER_KERNEL_LDFLAGS="-L${PARAVER_LIBSDIR}/paraver-kernel -L${PARAVER_LIBSDIR}/ptools_common_files -L${PARAVER_LIBSDIR}/wxparaver"
+    dnl PARAVER_KERNEL_LIBS="-lparaver-kernel -lparaver-api -lptools_common_files"
+    dnl PARAVER_KERNEL_RPATH="-R ${PARAVER_LIBSDIR}/paraver-kernel -R ${PARAVER_LIBSDIR}/ptools_common_files -R ${PARAVER_LIBSDIR}/wxparaver"
+
+    PARAVER_KERNEL_INCLUDES="-I${PARAVER_INCLUDES} ${BOOST_CPPFLAGS}"
+    PARAVER_KERNEL_LDFLAGS="-L${PARAVER_LIBSDIR}/paraver-kernel"
+    PARAVER_KERNEL_LIBS="-lparaver-kernel -lparaver-api"
+    PARAVER_KERNEL_RPATH="-R ${PARAVER_LIBSDIR}/paraver-kernel"
+
     AC_SUBST(PARAVER_KERNEL_INCLUDES)
     AC_SUBST(PARAVER_KERNEL_LDFLAGS)
     AC_SUBST(PARAVER_KERNEL_LIBS)
