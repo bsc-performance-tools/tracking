@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2017-07-14 German Llort <german.llort@bsc.e>
+	* Added boost serialization libraries to the tracking binary rpath 
+
 2016-08-02 German Llort <german.llort@bsc.e>
 	* Fixed Paraver dependencies complying with the new paraver-package
 
