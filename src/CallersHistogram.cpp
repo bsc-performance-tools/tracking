@@ -63,13 +63,13 @@ bool CallersHistogram::load(string filename)
       istringstream ssClusterID_t(token);
       (ssClusterID_t >> key);
       getline(iss, token, ',');
-      value.CallerName = token;
-      getline(iss, token, ',');
       istringstream ssNumBursts(token);
       (ssNumBursts >> value.NumBursts);
       getline(iss, token, ',');
       istringstream ssPct(token);
       (ssPct >> value.Pct);
+      getline(iss, token);
+      value.CallerName = token;
       iss.clear();
  
       insert(key, value);
@@ -250,7 +250,7 @@ void CallersHistogram::write(string filename)
     for (int i=0; i<it->second.size(); i++)
     {
        Caller_t value = it->second[i];
-       file << key << "," << value.CallerName << "," << value.NumBursts << "," << value.Pct << endl;
+       file << key << "," << value.NumBursts << "," << value.Pct << "," << value.CallerName << endl;
     }
   }
   file.close();
