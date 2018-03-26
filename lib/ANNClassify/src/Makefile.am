@@ -8,7 +8,4 @@ libANNClassify_la_SOURCES=\
 libANNClassify_la_CXXFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/libANN
 
 libANNClassify_la_LIBADD=\
-	$(top_srcdir)/libANN/libANN.la
-
-kk:
-	echo $(top_srcdir)/libANN/libANN.la
+	$(top_builddir)/libANN/libANN.la

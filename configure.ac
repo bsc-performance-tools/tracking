@@ -73,6 +73,11 @@ AC_CHECK_TYPES([int64_t, uint64_t, int8_t, uint8_t, int32_t, uint32_t, int16_t, 
 
 AC_CONFIG_FILES([Makefile lib/Makefile lib/SequenceScore/Makefile doc/Makefile src/Makefile src/scripts/Makefile src/gui/Makefile])
 
+AC_CONFIG_LINKS([lib/SequenceScore/include/SequenceScoring.h:lib/SequenceScore/include/SequenceScoring.h] \
+                [lib/SequenceScore/include/Error.h:lib/SequenceScore/include/Error.h] \
+                [lib/ANNClassify/include/ANNClassify/ANNClassify.h:lib/ANNClassify/include/ANNClassify/ANNClassify.h])
+
+
 AC_CONFIG_SUBDIRS([lib/ANNClassify])
 
 AC_OUTPUT

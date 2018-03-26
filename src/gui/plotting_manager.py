@@ -14,7 +14,10 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d import proj3d
 from numpy import nanmin, nanmax
 from scipy.optimize import curve_fit
-from scipy.stats import nanmean
+try:
+  from scipy.stats import nanmean
+except:
+  from numpy import nanmean
 try:
   from matplotlib.patches import Polygon
   from scipy.spatial import ConvexHull
