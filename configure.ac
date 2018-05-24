@@ -5,8 +5,14 @@
 #    Initializations    #
 #########################
 
+m4_define([tracking_major], [2])
+m4_define([tracking_minor], [6])
+m4_define([tracking_micro], [7])
+
+m4_define([tracking_version], [tracking_major.tracking_minor.tracking_micro])
+
 # Initialize autoconf & define package name, version and bug-report address 
-AC_INIT(Tracking, 2.6.7, tools@bsc.es)
+AC_INIT(Tracking, [tracking_version], tools@bsc.es)
 
 # GNU Autotools intermediate files are stored in the following directory
 AC_CONFIG_AUX_DIR(config)

@@ -1,7 +1,10 @@
 ChangeLog 'Tracking'
 
+2018-05-24 German Llort <german.llort@bsc.es>
+	* Standardise versioning
+
 2017-07-25 German Llort <german.llort@bsc.es>
-  * Fixed error parsing the output of precompiled histograms of callers per
+	* Fixed error parsing the output of precompiled histograms of callers per
 	cluster stored in a file (the label was extended to include the binary name
 	using the token delimiter in the string). Warning: THIS BREAKS COMPATIBILITY
 	WITH PREVIOUS VERSIONS.
