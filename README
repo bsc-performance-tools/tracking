@@ -7,3 +7,7 @@ Package dependencies
 
 * BSC Clustering Suite 2.6.x or higher - http://www.bsc.es/computer-sciences/performance-tools/downloads
 
+* The following python packages:
+	- Pillow
+	- wxPython
+	- matplotlib

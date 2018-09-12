@@ -1,4 +1,8 @@
-import ConfigParser
+try:
+  import ConfigParser
+except:
+  import configparser as ConfigParser
+
 import matplotlib.mlab as mlab
 import numpy as np
 import subprocess
@@ -11,7 +15,7 @@ import os.path
 CLUSTER_ID_THRESHOLD_FILTERED = 4
 CLUSTER_ID_UNTRACKED          = 5
 
-CSV_COLUMN_CLUSTERID    = 'clusterid'
+CSV_COLUMN_CLUSTERID    = 'ClusterID'
 CSV_FIRST_CLUSTER_ID    =  6
 CSV_INDEX_FIRST_METRIC  =  7
 CSV_INDEX_LAST_METRIC   = -1
@@ -49,10 +53,11 @@ class DataManager:
         csv = os.path.dirname(sys.argv[1]) + "/" + csv
         if not os.path.isfile(csv):
           csv = "." + csv 
-      self.Data[frame] = mlab.csv2rec(csv, comments='None')
+      # DEPRECATED in mlab >= 2.2: self.Data[frame] = mlab.csv2rec(csv, comments='None')
+      self.Data[frame] = np.genfromtxt(csv, dtype=None, comments='#', delimiter=',', names=True)
 
       # Read the list of metrics from the first frame (assumes all frames have the same metrics!)
-      self.MetricsInCSV = self.Data[frame].dtype.names[CSV_INDEX_FIRST_METRIC:CSV_INDEX_LAST_METRIC]
+      self.MetricsInCSV = self.Data[frame].dtype.names[CSV_INDEX_FIRST_METRIC:]
 
       # Filter the normalized metrics, we only plot the clustering dimensions and the extrapolated metrics
       self.Metrics[frame] = [m for m in self.MetricsInCSV if self.isClusteringDimension(m) or self.isExtrapolated(m)]
@@ -64,7 +69,8 @@ class DataManager:
           histogram = os.path.dirname(sys.argv[1]) + "/" + histogram
         # Ensure the histogram is not empty (may happen when all callers are unresolved)
         if (os.path.getsize(histogram) > SIZE_EMPTY_HISTOGRAM):
-          self.Callers[frame] = mlab.csv2rec(histogram)
+          # DEPRECATED in mlab >= 2.2: self.Callers[frame] = mlab.csv2rec(histogram)
+          self.Callers[frame] = np.genfromtxt(histogram, dtype=None, comments='#', delimiter=',', names=True) # XXX names=True?
 
       # Read the number of tasks per trace
       trace = FrameConfig['otrace']
@@ -73,7 +79,10 @@ class DataManager:
         if not os.path.isfile(trace):
           trace = "." + trace
 
-      header = subprocess.Popen(["head", "-n1", trace], shell=False, stdout=subprocess.PIPE).communicate()[0]
+      try:
+        header = subprocess.Popen(["head", "-n1", trace], shell=False, stdout=subprocess.PIPE, encoding='utf8').communicate()[0]
+      except:
+        header = subprocess.Popen(["head", "-n1", trace], shell=False, stdout=subprocess.PIPE).communicate()[0]
       num_tasks = float(header.split("(")[2].split(":")[2])
       self.TasksPerFrame.append(num_tasks)
 

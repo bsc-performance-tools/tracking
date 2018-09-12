@@ -226,7 +226,7 @@ class PlottingManager:
         # Compute the convex hull for this cluster
         # 
         if (AvailableHulls) and self.GUI.in_2D():
-          points = np.array( zip(xdata, ydata) )
+          points = np.array( list(zip(xdata, ydata)) )
           if (len(points) < 3):
             continue
 

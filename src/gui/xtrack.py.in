@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import wxversion
-wxversion.ensureMinimal('2.8')
+try:
+  import wxversion
+  wxversion.ensureMinimal('2.8')
+except:
+  from wx import VersionInfo
 
 import callers_frame
 import data_manager as DataManager
 import decorations as Decorations
-import Image
+from PIL import Image
 import math
 import matplotlib.animation as animation
 import numpy as np
@@ -33,6 +36,12 @@ class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
         wx.ListCtrl.__init__(self, parent, -1, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         CheckListCtrlMixin.__init__(self)
         ListCtrlAutoWidthMixin.__init__(self)
+    
+    def myInsertItem(self, index, label):
+        try:
+          return self.InsertItem(index, label)
+        except:
+          return self.InsertStringItem(index, label)
 
 class Gap(wx.BoxSizer):
   def __init__(self, orientation):
@@ -69,7 +78,7 @@ class FrameTimeline(scrolled.ScrolledPanel):
       self.ThumbFigures[frame] = thumb_figure
       self.ThumbCanvas[frame]  = thumb_canvas
       self.ThumbAxes[frame]    = thumb_axis
-      hbox.Add( thumb_panel, 0, wx.EXPAND | wx.ALL | wx.CENTER_FRAME, 5 )
+      hbox.Add( thumb_panel, 0, wx.EXPAND | wx.ALL , 5 )
 
     self.SetSizer(hbox)
     self.SetAutoLayout(1)
@@ -78,7 +87,7 @@ class FrameTimeline(scrolled.ScrolledPanel):
 
   def on_Thumb_Click(self, event):
     if (Verbose):
-      print "EVT_LEFT_DOWN:: on_Frame_Click: Clicked on frame #", event.GetEventObject().GetId()
+      print ("EVT_LEFT_DOWN:: on_Frame_Click: Clicked on frame #", event.GetEventObject().GetId())
     frame = event.canvas.GetId() - 1000
     if App.main.in_Frame_View():
       App.main.SelectFrame( frame )
@@ -109,7 +118,10 @@ class FrameTimeline(scrolled.ScrolledPanel):
         self.ThumbFigures[i].set_facecolor("#306CBD")
       else:
         self.ThumbFigures[i].set_facecolor("#FFFFFF")
-      self.ThumbAxes[i].set_axis_bgcolor("#FFFFFF")
+      try:
+        self.ThumbAxes[i].set_axis_bgcolor("#FFFFFF")
+      except:
+        self.ThumbAxes[i].set_facecolor("#FFFFFF")
       self.ThumbCanvas[i].draw()
 
   def Disable(self):
@@ -118,7 +130,10 @@ class FrameTimeline(scrolled.ScrolledPanel):
         self.ThumbFigures[i].set_facecolor("#808387")
       else:
         self.ThumbFigures[i].set_facecolor("#f2f1f0")
-      self.ThumbAxes[i].set_axis_bgcolor("#f2f1f0")
+      try:
+        self.ThumbAxes[i].set_axis_bgcolor("#f2f1f0")
+      except:
+        self.ThumbAxes[i].set_facecolor("#f2f1f0")
       self.ThumbCanvas[i].draw()
 
   def Rescale(self):
@@ -404,13 +419,13 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.ClusterSelector = CheckListCtrl(self.Panel)
     self.ClusterSelector.InsertColumn(0, 'Display regions', width=10);
 
-    index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Filtered')
+    index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Filtered')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_THRESHOLD_FILTERED)
     self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
     self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
     self.ClusterSelector.CheckItem(index, False)
-    index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Untracked')
+    index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Untracked')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_UNTRACKED)
     self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
@@ -418,7 +433,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.ClusterSelector.CheckItem(index, False)
 
     for cluster_id in range(self.Data.GetFirstObject(), self.Data.GetLastObject()+1):
-      index = self.ClusterSelector.InsertStringItem(sys.maxint, 'Region '+str(self.Data.PrettyCluster(cluster_id)))
+      index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Region '+str(self.Data.PrettyCluster(cluster_id)))
       (r, g, b) = Decorations.RGBColor0_255(cluster_id)
       self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
       (r, g, b) = Decorations.FontColor( (r, g, b) )
@@ -447,7 +462,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     FrameMetrics    = self.Data.GetFrameMetrics( self.FocusOnFrame )
     for metric in FrameMetrics:
       pretty_metric = self.Data.PrettyMetric( metric )
-      index = self.MetricSelector.InsertStringItem(sys.maxint, pretty_metric)
+      index = self.MetricSelector.myInsertItem(sys.maxsize, pretty_metric)
       metric_id = index
       (r, g, b) = Decorations.MetricColor(metric_id)
       self.MetricSelector.SetItemBackgroundColour(index, wx.Colour(r*255, g*255, b*255))
@@ -655,7 +670,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
   #
   def on_TogglePlotControls_Button(self, event):
     if (Verbose):
-      print "EVT_TOGGLEBUTTON::TogglePlotControlsButton"
+      print ("EVT_TOGGLEBUTTON::TogglePlotControlsButton")
     Btn   = event.GetEventObject()
     State = Btn.GetValue()
 
@@ -670,61 +685,61 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_XAxis_Change(self, event):
     if (Verbose):
-      print "EVT_COMBOBOX::XAxisCombo"
+      print ("EVT_COMBOBOX::XAxisCombo")
     self.Plotter.Replot(True)
     return
 
   def on_YAxis_Change(self, event):
     if (Verbose):
-      print "EVT_COMBOBOX::YAxisCombo"
+      print ("EVT_COMBOBOX::YAxisCombo")
     self.Plotter.Replot(True)
     return
 
   def on_ZAxis_Change(self, event):
     if (Verbose):
-      print "EVT_COMBOBOX::ZAxisCombo"
+      print ("EVT_COMBOBOX::ZAxisCombo")
     self.Plotter.Replot(True)
     return
 
   def on_XLog_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::XAxisLogChecker"
+      print ("EVT_CHECKBOX::XAxisLogChecker")
     self.Plotter.Rescale()
     return
 
   def on_YLog_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::YAxisLogChecker"
+      print ("EVT_CHECKBOX::YAxisLogChecker")
     self.Plotter.Rescale()
     return
 
   def on_ZLog_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::ZAxisLogChecker"
+      print ("EVT_CHECKBOX::ZAxisLogChecker")
     self.Plotter.Rescale()
     return
 
   def on_XScale_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::XAxisRatioChecker"
+      print ("EVT_CHECKBOX::XAxisRatioChecker")
     self.Plotter.Replot()
     return
 
   def on_YScale_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::YAxisRatioChecker"
+      print ("EVT_CHECKBOX::YAxisRatioChecker")
     self.Plotter.Replot()
     return
 
   def on_ZScale_Checker(self, event):
     if (Verbose):
-      print "EVT_CHECKBOX::ZAxisRatioChecker"
+      print ("EVT_CHECKBOX::ZAxisRatioChecker")
     self.Plotter.Replot()
     return
 
   def on_Swap_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::AxesSwapButton"
+      print ("EVT_BUTTON::AxesSwapButton")
     old_x       = self.XAxisCombo.GetSelection()
     old_y       = self.YAxisCombo.GetSelection()
     old_log_x   = self.XAxisLogChecker.IsChecked()
@@ -744,7 +759,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_3D_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::Activate3DButton"
+      print ("EVT_BUTTON::Activate3DButton")
 
     if self.Activate3DButton.GetValue():
       self.ZAxisCombo.Enable()
@@ -762,19 +777,19 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_FittingSamples_Change(self, event):
     if (Verbose):
-      print "EVT_TEXT_ENTER::FittingSamplesText"
+      print ("EVT_TEXT_ENTER::FittingSamplesText")
     self.Plotter.ComputePlots2()
     return
   def on_FittingModel_Change(self, event):
     if (Verbose):
-      print "EVT_COMBOBOX::FittingModelCombo"
+      print ("EVT_COMBOBOX::FittingModelCombo")
     if (self.GetFittingSamples > 0):
       self.Plotter.ComputePlots2()
     return
 
   def on_PlaybarTrajectory_Toggle(self, event):
     if (Verbose):
-      print "EVT_TOGGLEBUTTON::PlaybarTrajectoryToggle"
+      print ("EVT_TOGGLEBUTTON::PlaybarTrajectoryToggle")
 
     if (self.PlaybarTrajectoryToggleValue):
       self.Setup_Frame_View()
@@ -812,14 +827,14 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_PlaybarParaver_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::PlaybarParaverButton"
+      print ("EVT_BUTTON::PlaybarParaverButton")
     subprocess.Popen(["wxparaver", self.Data.GetTrace(self.GetSelectedFrame()), INSTALLATION_PATH+"/etc/clusterid.cfg"])
 
     return
 
   def on_PlaybarPrevious_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::PlaybarPrevButton"
+      print ("EVT_BUTTON::PlaybarPrevButton")
     CurrentFrame   = self.GetSelectedFrame()
     NumberOfFrames = self.Data.GetNumberOfFrames()
     if (CurrentFrame - 1 >= 1):
@@ -837,7 +852,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_PlaybarPlay_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::PlaybarPlayButton"
+      print ("EVT_BUTTON::PlaybarPlayButton")
     self.DisableControls()
     self.PlayingCurrentFrame = 1
     self.PlayTimer.Start(0, oneShot=True)
@@ -845,7 +860,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_PlaybarNext_Button(self, event):
     if (Verbose):
-      print "EVT_BUTTON::PlaybarNextButton"
+      print ("EVT_BUTTON::PlaybarNextButton")
     CurrentFrame   = self.GetSelectedFrame()
     NumberOfFrames = self.Data.GetNumberOfFrames()
     if (CurrentFrame + 1 <= NumberOfFrames):
@@ -854,7 +869,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_ToggleSelectors_Button(self, event):
     if (Verbose):
-      print "EVT_TOGGLEBUTTON::ToggleSelectorsButton"
+      print ("EVT_TOGGLEBUTTON::ToggleSelectorsButton")
     Btn   = event.GetEventObject()
     State = Btn.GetValue()
     
@@ -869,7 +884,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_ClusterSelector_Display(self, event, flag):
     if (Verbose):
-      print "UN/CHECK::ClusterSelector"
+      print ("UN/CHECK::ClusterSelector")
     self.Plotter.Display_Objects()
     self.Plotter.ComputePlots2()
     return
@@ -882,30 +897,30 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.Plotter.ComputePlots2()
     if (event_type == wx.EVT_LIST_ITEM_SELECTED.typeId):
       if (Verbose):
-        print "CLICKED::ClusterSelector"
+        print ("CLICKED::ClusterSelector")
     elif (event_type == wx.EVT_LIST_ITEM_ACTIVATED.typeId):
       if (Verbose):
-        print "DOUBLE-CLICKED::ClusterSelector"
+        print ("DOUBLE-CLICKED::ClusterSelector")
       self.OpenCallersDialog( self.GetSelectedFrame(), self.GetSelectedObject() )
     return
 
   def on_ClusterSelectorButton_All(self, event):
     if (Verbose):
-      print "EVT_BUTTON::ClusterSelectorButtonAll"
+      print ("EVT_BUTTON::ClusterSelectorButtonAll")
     for index in range(self.ClusterSelector.GetItemCount()): 
       self.ClusterSelector.CheckItem(index, True)
     return
 
   def on_ClusterSelectorButton_None(self, event):
     if (Verbose):
-      print "EVT_BUTTON::ClusterSelectorButtonNone"
+      print ("EVT_BUTTON::ClusterSelectorButtonNone")
     for index in range(self.ClusterSelector.GetItemCount()): 
       self.ClusterSelector.CheckItem(index, False)
     return
   
   def on_MetricSelector_Display(self, event, flag):
     if (Verbose):
-      print "UN/CHECK::MetricSelector"
+      print ("UN/CHECK::MetricSelector")
     index  = event
     metric = self.Data.GetFrameMetrics(1)[index]
     self.Plotter.ComputePlots2()
@@ -913,7 +928,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_MetricSelector_Focus(self, event):
     if (Verbose):
-      print "EVT_LIST_ITEM_SELECTED::MetricSelector"
+      print ("EVT_LIST_ITEM_SELECTED::MetricSelector")
 
     index  = event.GetIndex()
     metric = self.MetricSelector.GetItem(index, 0).GetText()
@@ -922,14 +937,14 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
   def on_MetricSelectorButton_All(self, event):
     if (Verbose):
-      print "EVT_BUTTON::MetricSelectorButtonAll"
+      print ("EVT_BUTTON::MetricSelectorButtonAll")
     for index in range(self.MetricSelector.GetItemCount()):
       self.MetricSelector.CheckItem(index, True)
     return
 
   def on_MetricSelectorButton_None(self, event):
     if (Verbose):
-      print "EVT_BUTTON::MetricSelectorButtonNone"
+      print ("EVT_BUTTON::MetricSelectorButtonNone")
     for index in range(self.MetricSelector.GetItemCount()):
       self.MetricSelector.CheckItem(index, False)
     return
@@ -947,19 +962,27 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
   def ShowingHulls(self):
     return (self.Toolbar1.GetToolState(self.Toolbar1.ON_HULLS_CHECK))
 
+
 class Toolbar1(NavigationToolbar):
   ON_POINTS_CHECK  = wx.NewId()
   ON_CENTROIDS_CHECK = wx.NewId()
   ON_HULLS_CHECK     = wx.NewId()
   ON_GRID_CHECK     = wx.NewId()
 
+  def myAddCheckTool(self, toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp):
+    try:
+      self.AddCheckLabelTool(toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp)
+    except:
+      self.AddCheckTool(toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp)
+
   def __init__(self, canvas):
     NavigationToolbar.__init__(self, canvas)
 
     self.AddSeparator()
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_GRID_CHECK,
+      'Grid',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/grid.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/grid.png'),
       'Shows the grid',
@@ -967,21 +990,25 @@ class Toolbar1(NavigationToolbar):
 
     self.AddSeparator()
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_POINTS_CHECK,
+      'Points',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/scatter.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/scatter.png'),
       'Draw the points of the cluster',
       'Draw the points of the cluster')
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_CENTROIDS_CHECK,
+      'Centroids',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/centroid.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/centroid.png'),
       'Draw the centroid of the cluster',
       'Draw the centroid of the cluster')
-    self.CheckHull = self.AddCheckTool(
+ 
+    self.CheckHull = self.myAddCheckTool(
       self.ON_HULLS_CHECK,
+      'Hulls',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/hull.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/hull.png'),
       'Draw the perimeter of the cluster',
@@ -1024,13 +1051,20 @@ class Toolbar2(NavigationToolbar):
   ON_LEGEND_CHECK  = wx.NewId()
   ON_GRID_CHECK    = wx.NewId()
 
+  def myAddCheckTool(self, toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp):
+    try:
+      self.AddCheckLabelTool(toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp)
+    except:
+      self.AddCheckTool(toolId, label, bitmap1, bmpDisabled, shortHelp, longHelp)
+
   def __init__(self, canvas):
     NavigationToolbar.__init__(self, canvas)
 
     self.AddSeparator()
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_GRID_CHECK,
+      'Grid',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/grid.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/grid.png'),
       'Shows the grid',
@@ -1038,15 +1072,17 @@ class Toolbar2(NavigationToolbar):
 
     self.AddSeparator()
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_BOXPLOT_CHECK,
+      'Boxplot',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/boxplot.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/boxplot.png'),
       'Switch between boxplots and trend lines',
       'Switch between boxplots and trend lines')
 
-    self.AddCheckTool(
+    self.myAddCheckTool(
       self.ON_LEGEND_CHECK,
+      'Legend',
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/legend.png'),
       wx.Bitmap(INSTALLATION_PATH+'/etc/icons/legend.png'),
       'Show plots legends',
@@ -1072,12 +1108,12 @@ class Toolbar2(NavigationToolbar):
 #
 
 def Usage():
-  print ""
-  print "Error: Invalid arguments!"
-  print ""
-  print "USAGE:"
-  print "  xtrack <tracking_output.xtrack>"
-  print ""
+  print ("")
+  print ("Error: Invalid arguments!")
+  print ("")
+  print ("USAGE:")
+  print ("  xtrack <tracking_output.xtrack>")
+  print ("")
 
 # Parse arguments
 argc = len(sys.argv)

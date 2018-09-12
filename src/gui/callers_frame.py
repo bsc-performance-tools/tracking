@@ -1,5 +1,9 @@
-import wxversion
-wxversion.ensureMinimal('2.8')
+try:
+  import wxversion
+  wxversion.ensureMinimal('2.8')
+except:
+  from wx import VersionInfo
+
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 import numpy as np
@@ -57,18 +61,18 @@ class CallersFrame( wx.Frame ):
     self.SizerCallersList = wx.BoxSizer(wx.HORIZONTAL)
     self.SizerCallersList.Add( self.CallersList, 1, wx.EXPAND )
 
-    print plot_data
-    print "max: ",max(plot_data)
+    print (plot_data)
+    print ("max: ",max(plot_data))
     index = np.searchsorted( plot_data, max(plot_data) )
-    print "index: ",index
+    print ("index: ",index)
     explode = []
     for i in range(0, len(plot_data)):
       if (plot_data[i] == np.max(plot_data)):
         explode.append( 0.1 ) 
       else:
         explode.append(0)
-    print index
-    print explode
+    print (index)
+    print (explode)
 
     self.Wedges, self.PlotLabels = self.Axes.pie( plot_data, labels=plot_labels, explode=explode, colors=PieColors, shadow=False, startangle=90 )
     wedge_id = 0
