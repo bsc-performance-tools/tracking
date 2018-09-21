@@ -174,14 +174,29 @@ class PlottingManager:
         # 
         # Compute the scatter plot for this cluster
         # 
-        xdata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricX )
-        ydata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricY )
-        if (len(xdata) == 0) or (len(ydata) == 0):
+       
+        # Get all data for X & Y & Z coordinates
+        xdata_raw = self.Data.GetClusterData( current_frame, current_object, SelectedMetricX )
+        ydata_raw = self.Data.GetClusterData( current_frame, current_object, SelectedMetricY )
+        zdata = zdata_raw = []
+
+        if (len(xdata_raw) == 0) or (len(ydata_raw) == 0):
           continue
+
         if self.GUI.in_3D():
-          zdata = self.Data.GetClusterData( current_frame, current_object, SelectedMetricZ )
-          if (len(zdata) == 0):
+          zdata_raw = self.Data.GetClusterData( current_frame, current_object, SelectedMetricZ )
+          if (len(zdata_raw) == 0):
             continue
+
+        # Filter points where all axes are not NaN's
+        if self.GUI.in_3D():
+          (xdata, ydata, zdata) = self.Data.GetClusterData3( current_frame, current_object, SelectedMetricX, SelectedMetricY, SelectedMetricZ )
+        else:
+          (xdata, ydata) = self.Data.GetClusterData2( current_frame, current_object, SelectedMetricX, SelectedMetricY )
+
+        nans_detected = False
+        if ((len(xdata) < len(xdata_raw)) or (len(ydata) < len(ydata_raw)) or (len(zdata) < len(zdata_raw))):
+          nans_detected = True
 
         if (self.GUI.in_Trajectory_View()):
           if self.GUI.RatioX():
@@ -209,12 +224,16 @@ class PlottingManager:
         # 
         centroid_x = nanmean( xdata )
         centroid_y = nanmean( ydata )
+        centroid_marker = "o"
+        if (nans_detected):
+          centroid_marker = "X"
+
         if self.GUI.in_3D():
           centroid_z = nanmean( zdata )
-          centroid = self.ScatterPlotAxes.scatter( centroid_x, centroid_y, centroid_z, s=50, color=(r, g, b), edgecolor="black", marker="o", zorder=3, picker=True )
+          centroid = self.ScatterPlotAxes.scatter( centroid_x, centroid_y, centroid_z, s=50, color=(r, g, b), edgecolor="black", marker=centroid_marker, zorder=3, picker=True )
           self.Trajectories[(current_object, current_frame)] = (centroid_x, centroid_y, centroid_z)
         else:
-          centroid = self.ScatterPlotAxes.scatter( centroid_x, centroid_y, s=50, color=(r, g, b), edgecolor="black", marker="o", zorder=3, picker=True)
+          centroid = self.ScatterPlotAxes.scatter( centroid_x, centroid_y, s=50, color=(r, g, b), edgecolor="black", marker=centroid_marker, zorder=3, picker=True)
           self.Trajectories[(current_object, current_frame)] = (centroid_x, centroid_y)
 
         centroid.set_gid( self.Data.PrettyCluster(current_object) )

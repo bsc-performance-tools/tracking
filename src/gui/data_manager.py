@@ -131,6 +131,21 @@ class DataManager:
   def GetClusterData(self, frame, cluster_id, metric):
     return self.Data[frame][self.Data[frame][CSV_COLUMN_CLUSTERID] == cluster_id][metric]
 
+  def GetClusterData2(self, frame, cluster_id, X, Y):
+    frameData = self.Data[frame]
+    dataWithoutNans = frameData[  (frameData[CSV_COLUMN_CLUSTERID] == cluster_id) &
+                                 ~(np.isnan(frameData[X]))                        &
+                                 ~(np.isnan(frameData[Y])) ]
+    return (dataWithoutNans[X], dataWithoutNans[Y])
+
+  def GetClusterData3(self, frame, cluster_id, X, Y, Z):
+    frameData = self.Data[frame]
+    dataWithoutNans = frameData[  (frameData[CSV_COLUMN_CLUSTERID] == cluster_id) &
+                                 ~(np.isnan(frameData[X]))                        &
+                                 ~(np.isnan(frameData[Y]))                        &
+                                 ~(np.isnan(frameData[Z])) ]
+    return (dataWithoutNans[X], dataWithoutNans[Y], dataWithoutNans[Z])
+
   def GetMetricID(self, frame, metric_name):
     return self.Metrics[frame].index( metric_name )
   

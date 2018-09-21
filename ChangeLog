@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2018-09-21 German Llort <german.llort@bsc.es>
+	* Ignore NaN values to compute the clusters' centroids
+
 2018-09-12 German Llort <german.llort@bsc.es>
 	* Compatibility fixes for Python 2 and 3, and wxPython Phoenix
 
