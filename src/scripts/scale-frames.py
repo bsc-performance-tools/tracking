@@ -33,7 +33,7 @@ def log(x):
 
 ### Returns the xrange/yrange limits for the GNUplot script
 def ComputeRanges(trace, dimension):
-  dimension = "d_" + dimension.lower()
+  dimension = "d_" + dimension
   if dimension in DimensionsToScale:
     return (float(NormalMinPerTrace[dimension][trace]), float(NormalMaxPerTrace[dimension][trace]))
   else:
@@ -41,7 +41,7 @@ def ComputeRanges(trace, dimension):
 
 ### Normalizes the values of one dimension of the CSV data file
 def Transform(cell, trace, dimension):
-  dimension = dimension.lower()
+  dimension = dimension
 
   min = MinPerTrace[dimension][trace]
   max = MaxPerTrace[dimension][trace]
@@ -72,7 +72,7 @@ while ((currentArg < len(sys.argv)) and (sys.argv[currentArg][0] == '-')):
     for i in range(0, len(DimensionsToScale)):
       if (DimensionsToScale[i][0:2] != "d_") and (DimensionsToScale[i][1:2] != "_"):
         DimensionsToScale[i] = "d_" + DimensionsToScale[i]
-    DimensionsToScale = [dim.lower() for dim in DimensionsToScale]
+    DimensionsToScale = [dim for dim in DimensionsToScale]
   else:
     PrintUsage()
     print "*** INVALID PARAMETER "+sys.argv[currentArg];
@@ -117,11 +117,12 @@ for Trace in sys.argv[currentArg:]:
   TasksPerTrace.append(numTasks)
 
   ### Load the clustering CSV
-  Data[TraceNo] = mlab.csv2rec( CSVFile, comments='None' )
+  # DEPRECATED in mlab >= 2.2: Data[TraceNo] = mlab.csv2rec( CSVFile, comments='None' )
+  Data[TraceNo] = np.genfromtxt(CSVFile, dtype=None, comments='#', delimiter=',', names=True)
 
   ### Parse the CSV headings to find which are the clustering dimensions
   Headings = Data[TraceNo].dtype.names;
-  FirstClusterDimension = Headings.index('line') + 1  # First dimension comes after column line
+  FirstClusterDimension = Headings.index('Line') + 1  # First dimension comes after column line
   LastClusterDimension  = FirstClusterDimension
  
   while ((LastClusterDimension + 1 < len(Headings)) and (Headings[LastClusterDimension+1][0] == 'd')):
@@ -224,13 +225,13 @@ for CurrentTrace in range(0, TraceNo):
   # mlab.rec2csv(D2, OutputCSV, delimiter=',') # Don't use this method, fields are sorted arbitrarily.
 
   fd = open(OutputCSV, 'w+')
-  Header = ', '.join(NormalizedDimensions + ['clusterid'])
+  Header = ', '.join(NormalizedDimensions + ['ClusterID'])
   fd.write(Header + "\n")
   for i in range(0, len(Data[CurrentTrace])):
     Point = Data[CurrentTrace][i]
     line  = ""
     for NormalizedDimension in NormalizedDimensions:
       line = line + str(Point[NormalizedDimension]) + ", "
-    line = line + str(Point['clusterid'])
+    line = line + str(Point['ClusterID'])
     fd.write(line + "\n")
   fd.close()

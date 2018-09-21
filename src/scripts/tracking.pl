@@ -378,7 +378,6 @@ if ($DimensionsToScale ne "")
   $CMD .= "-s $DimensionsToScale ";
 }
 $CMD .= join(" ", @InputTraces);
-print $CMD;
 system($CMD);
 if ($? == 0) 
 {
