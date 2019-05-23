@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2019-05-23 German Llort <german.llort@bsc.es>
+	* Fixes type error in wx.Colour constructor for wxPython Phoenix 
+
 2018-09-21 German Llort <german.llort@bsc.es>
 	* Ignore NaN values to compute the clusters' centroids
 

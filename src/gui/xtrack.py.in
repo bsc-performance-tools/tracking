@@ -421,13 +421,13 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
     index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Filtered')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_THRESHOLD_FILTERED)
-    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
+    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(int(r), int(g), int(b)))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
     self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
     self.ClusterSelector.CheckItem(index, False)
     index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Untracked')
     (r, g, b) = Decorations.RGBColor0_255(DataManager.CLUSTER_ID_UNTRACKED)
-    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
+    self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(int(r), int(g), int(b)))
     (r, g, b) = Decorations.FontColor( (r, g, b) )
     self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
     self.ClusterSelector.CheckItem(index, False)
@@ -435,7 +435,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     for cluster_id in range(self.Data.GetFirstObject(), self.Data.GetLastObject()+1):
       index = self.ClusterSelector.myInsertItem(sys.maxsize, 'Region '+str(self.Data.PrettyCluster(cluster_id)))
       (r, g, b) = Decorations.RGBColor0_255(cluster_id)
-      self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(r, g, b))
+      self.ClusterSelector.SetItemBackgroundColour(index, wx.Colour(int(r), int(g), int(b)))
       (r, g, b) = Decorations.FontColor( (r, g, b) )
       self.ClusterSelector.SetItemTextColour(index, wx.Colour(r, g, b))
       self.ClusterSelector.CheckItem(index, True)
@@ -465,7 +465,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
       index = self.MetricSelector.myInsertItem(sys.maxsize, pretty_metric)
       metric_id = index
       (r, g, b) = Decorations.MetricColor(metric_id)
-      self.MetricSelector.SetItemBackgroundColour(index, wx.Colour(r*255, g*255, b*255))
+      self.MetricSelector.SetItemBackgroundColour(index, wx.Colour(int(r*255), int(g*255), int(b*255)))
       (r, g, b) = Decorations.FontColor( (r*255, g*255, b*255) )
       self.MetricSelector.SetItemTextColour(index, wx.Colour(r, g, b))
 
