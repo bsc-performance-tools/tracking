@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2019-11-07 German Llort <german.llort@bsc.es>
+	* Fixes compatibility issue with Python3 when parsing the number of tasks from the prv trace
+
 2019-05-23 German Llort <german.llort@bsc.es>
 	* Fixes type error in wx.Colour constructor for wxPython Phoenix 
 

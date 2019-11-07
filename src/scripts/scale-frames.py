@@ -112,7 +112,8 @@ for Trace in sys.argv[currentArg:]:
   CSVFile = TraceBasename + SuffixClustersData
 
   ### Get the number of tasks from the trace
-  Header = subprocess.Popen(["head", "-n1", Trace], shell=False, stdout=subprocess.PIPE).communicate()[0]
+  t = open(Trace, 'r')
+  Header = t.readline()
   numTasks = float(Header.split("(")[2].split(":")[2])
   TasksPerTrace.append(numTasks)
 
