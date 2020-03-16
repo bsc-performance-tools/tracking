@@ -7,7 +7,7 @@
 
 m4_define([tracking_major], [2])
 m4_define([tracking_minor], [6])
-m4_define([tracking_micro], [10])
+m4_define([tracking_micro], [11])
 
 m4_define([tracking_version], [tracking_major.tracking_minor.tracking_micro])
 
