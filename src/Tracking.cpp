@@ -654,8 +654,16 @@ void Tracking::Recolor()
     string TraceBaseName (RemoveExtension(InputTraces[i]).c_str());
     string ScaledPlot = TraceBaseName + ".*" + SUFFIX_SCALED_PLOT;
 
+    // The list of plots contains wildcards and may expand to a variable number of args.
+    // Use special arguments -- and == to mark frames and output
     InPlots.push_back ( ScaledPlot );
+    InPlots.push_back ( "--" ); // Mark the next frame
   }
+  if ((InPlots.size() > 0) && (InPlots[InPlots.size()-1] == "--"))
+  {
+    InPlots[InPlots.size()-1] = "=="; // Mark the output file 
+  }
+
   string CMD = string(getenv("TRACKING_HOME")) + "/bin/recoloring.pl ";
   for (int i=0; i<InPlots.size(); i++)
   {

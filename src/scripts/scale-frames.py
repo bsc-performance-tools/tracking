@@ -185,7 +185,7 @@ for CurrentTrace in range(0, TraceNo):
   ### Rewrite the plots with scaled ranges
   for Plot in AllPlots:
 
-    if ( Plot.split(".")[-2] == "Normalized" ) or (".SAMPLE_DATA." in Plot):
+    if ( Plot.split(".")[-2] == "Normalized" ) or (".SAMPLE_DATA." in Plot) or (".3D." in Plot):
       continue
 
     OutputPlot = Plot + SuffixScaledPlot
@@ -194,17 +194,25 @@ for CurrentTrace in range(0, TraceNo):
     PrintDimX = Plot.split(".")[-3]
     PrintDimY = Plot.split(".")[-2]
 
-    ### Write the new range for the scaled plot
-    XRange = ComputeRanges(CurrentTrace, PrintDimX)
-    YRange = ComputeRanges(CurrentTrace, PrintDimY)
+    if ("d_" + PrintDimX not in ClusteringDimensions) or ("d_" + PrintDimY not in ClusteringDimensions):
+      continue
 
-    pretty_x_min = "%.2f" % XRange[0]
-    pretty_x_max = "%.2f" % XRange[1]
-    pretty_y_min = "%.2f" % YRange[0]
-    pretty_y_max = "%.2f" % YRange[1]
-    os.system( "echo set xrange [" + pretty_x_min + ":" + pretty_x_max + "] > "  + OutputPlot )
-    os.system( "echo set yrange [" + pretty_y_min + ":" + pretty_y_max + "] >> " + OutputPlot )
-    os.system( "cat " + Plot + " | grep -v \"set xrange\" | grep -v \"set yrange\" >> " + OutputPlot )
+    if ("d_" + PrintDimX in ClusteringDimensions):
+      ### Write the new range for the scaled plot
+      XRange = ComputeRanges(CurrentTrace, PrintDimX)
+      pretty_x_min = "%.2f" % XRange[0]
+      pretty_x_max = "%.2f" % XRange[1]
+      os.system( "echo set xrange [" + pretty_x_min + ":" + pretty_x_max + "] > "  + OutputPlot )
+      grep_x = " | grep -v \"set xrange\""
+
+    if ("d_" + PrintDimY in ClusteringDimensions):
+      YRange = ComputeRanges(CurrentTrace, PrintDimY)
+      pretty_y_min = "%.2f" % YRange[0]
+      pretty_y_max = "%.2f" % YRange[1]
+      os.system( "echo set yrange [" + pretty_y_min + ":" + pretty_y_max + "] >> " + OutputPlot )
+      grep_y = " | grep -v \"set yrange\""
+
+    os.system( "cat " + Plot + grep_x + grep_y + " >> " + OutputPlot )
 
   ### Rewrite the CSV file with normalized values for the clustering dimensions
   OutputCSV = CSVFile + SuffixNormalizedCSV 

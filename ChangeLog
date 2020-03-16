@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2020-03-13 German Llort <german.llort@bsc.es>
+	* Fixes (partially) problem with clustering option output-plots="all" (3D plots are not rescaled/recolored)
+
 2019-11-07 German Llort <german.llort@bsc.es>
 	* Fixes compatibility issue with Python3 when parsing the number of tasks from the prv trace
 

@@ -20,7 +20,27 @@ my $VAR_OBJECTS           = "Objects";
 # Parse arguments
 my $ARGC             = @ARGV;
 my $OUT_PREFIX       = $ARGV[$ARGC-1];
-my $NUM_INPUT_PLOTS  = $ARGC-1;
+my $NUM_INPUT_PLOTS  = 0;
+my %INPUT_PLOTS      = ();
+my $NUM_FRAMES       = 1;
+
+for (my $i = 0; $i < @ARGV; $i++) {
+  if ($ARGV[$i] eq "--") 
+  {
+    $NUM_FRAMES ++;
+  }
+  elsif ($ARGV[$i] eq "==")
+  {
+    $OUT_PREFIX = $ARGV[$i+1];
+    last;
+  }
+  else
+  {
+    $NUM_INPUT_PLOTS ++;
+    # For each plot store to which frame corresponds
+    $INPUT_PLOTS{$ARGV[$i]} = $NUM_FRAMES;
+  }
+}
 
 my %ColorTranslation   = ();
 my @RecoloredPlotArray = ();
@@ -67,11 +87,12 @@ do
 
       my @LinksTokens = split(/;/, $Links);
       my $FramesInLinks = @LinksTokens;
-      if ($FramesInLinks != $NUM_INPUT_PLOTS)
-      {
-        print "ERROR: Number of input plots (".$NUM_INPUT_PLOTS.") differs from the number of experiments in the cluster sequence (".$FramesInLinks.")\n";
-        exit;
-      }
+
+#      if ($FramesInLinks != $NUM_INPUT_PLOTS)
+#      {
+#        print "ERROR: Number of input plots (".$NUM_INPUT_PLOTS.") differs from the number of experiments in the cluster sequence (".$FramesInLinks.")\n";
+#        exit;
+#      }
 
       if ($CurrentSection eq $SECTION_TRACKED)
       {
@@ -105,10 +126,8 @@ close FD;
 
 print "Recoloring clusters in ".$NUM_INPUT_PLOTS." plots...\n";
 
-for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
-  my $IN_PLOT = $ARGV[$Step];
-  $IN_PLOT    = `ls $IN_PLOT`;
-  chomp $IN_PLOT;
+foreach my $IN_PLOT (keys %INPUT_PLOTS) {
+  my $Step = $INPUT_PLOTS{$IN_PLOT}-1;
   my $DataFullPath = `dirname $IN_PLOT`;
   chomp $DataFullPath;
 
@@ -116,6 +135,8 @@ for (my $Step = 0; $Step < $NUM_INPUT_PLOTS; $Step++) {
   open IN,  "$IN_PLOT" || die "Could not open '$IN_PLOT': $!\n";
   my $OUT_PLOT = $IN_PLOT.$RECOLORED_PLOT_SUFFIX;
   my $TO_PNG_SCRIPT = $OUT_PLOT.$TO_PNG_SUFFIX;
+  print $OUT_PLOT."\n";
+  print $TO_PNG_SCRIPT."\n";
   open OUT, ">$OUT_PLOT" || die "Could not open '$OUT_PLOT': $!\n";
   open TOPNG, ">$TO_PNG_SCRIPT" || die "Could not open '$TO_PNG_SCRIPT': $!\n";
 
