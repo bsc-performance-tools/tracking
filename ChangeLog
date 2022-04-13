@@ -1,5 +1,10 @@
 ChangeLog 'Tracking'
 
+2022-04-13 German Llort <german.llort@bsc.es>
+	* Adds check in scale-frames.py for the names of the clustering
+	dimensions matching between the DATA.csv file and the output GNUplot
+	scripts from the clustering.
+
 2020-05-08 German Llort <german.llort@bsc.es>
 	* Fixes compatibility issue with Python3 in scale-frames.py
 

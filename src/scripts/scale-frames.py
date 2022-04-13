@@ -194,7 +194,12 @@ for CurrentTrace in range(0, TraceNo):
     PrintDimX = Plot.split(".")[-3]
     PrintDimY = Plot.split(".")[-2]
 
-    if ("d_" + PrintDimX not in ClusteringDimensions) or ("d_" + PrintDimY not in ClusteringDimensions):
+    if ("d_" + PrintDimX not in ClusteringDimensions):
+      print("WARNING! I don't recognize '" + PrintDimX + "' from plot '" + Plot + "' as one of the clustering dimensions seen at CSV file '" + CSVFile + "': " + str(ClusteringDimensions) + ". Does capitalization match?")
+      continue
+    if ("d_" + PrintDimY not in ClusteringDimensions):
+      print("WARNING! I don't recognize '" + PrintDimY + "' from plot '" + Plot + "' as one of the clustering dimensions seen at CSV file '" + CSVFile + "': " + str(ClusteringDimensions) + ". Does capitalization match?")
+      print("Does capitalization match?")
       continue
 
     if ("d_" + PrintDimX in ClusteringDimensions):
