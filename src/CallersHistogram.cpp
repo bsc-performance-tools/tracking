@@ -181,7 +181,7 @@ void CallersHistogram::compute3D()
   else
   {
     Trace              *trace = NULL;
-    vector<Window *>    windows;
+    vector<Timeline *>    windows;
     vector<Histogram *> histograms;
     SaveOptions         dummy_options;
 
@@ -207,7 +207,7 @@ void CallersHistogram::compute3D()
       delete *it;
     }
     histograms.clear();
-    for (vector<Window *>::iterator it = windows.begin(); it != windows.end(); ++it)
+    for (vector<Timeline *>::iterator it = windows.begin(); it != windows.end(); ++it)
     {
       delete *it;
     }

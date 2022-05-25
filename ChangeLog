@@ -1,5 +1,8 @@
 ChangeLog 'Tracking'
 
+2022-05-25 German Llort <german.llort@bsc.es>
+	* Stays compatible with Paraver API changes beyond version >= 4.10.0
+
 2022-04-13 German Llort <german.llort@bsc.es>
 	* Adds check in scale-frames.py for the names of the clustering
 	dimensions matching between the DATA.csv file and the output GNUplot
