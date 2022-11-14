@@ -464,9 +464,14 @@ void Tracking::BuildFinalSequenceFromFile()
 
   FinalSequence = new SequenceLink(ClustersInfoData);
 
+  // Load the next line of the sequences file
   while (getline(manual_input, Sequence))
-  {
-    FinalSequence->AddSequence( Sequence );
+  { 
+    // Check is not only whitespaces
+    if (!std::all_of(Sequence.begin(), Sequence.end(), isspace))
+    {
+      FinalSequence->AddSequence( Sequence );
+    }
   }
 
   FinalSequence->write(cout, true, true);

@@ -7,7 +7,7 @@
 
 m4_define([tracking_major], [2])
 m4_define([tracking_minor], [6])
-m4_define([tracking_micro], [13])
+m4_define([tracking_micro], [14])
 
 m4_define([tracking_version], [tracking_major.tracking_minor.tracking_micro])
 
@@ -79,10 +79,16 @@ AC_CHECK_TYPES([int64_t, uint64_t, int8_t, uint8_t, int32_t, uint32_t, int16_t, 
 
 AC_CONFIG_FILES([Makefile lib/Makefile lib/SequenceScore/Makefile doc/Makefile src/Makefile src/scripts/Makefile src/gui/Makefile])
 
-AC_CONFIG_LINKS([lib/SequenceScore/include/SequenceScoring.h:lib/SequenceScore/include/SequenceScoring.h] \
+AC_CONFIG_LINKS([src/scripts/tracking.in:src/scripts/tracking.in] \
+		[src/scripts/callers-template.cfg:src/scripts/callers-template.cfg] \
+		[src/gui/xtrack.in:src/gui/xtrack.in] \
+		[src/gui/xtrack.py.in:src/gui/xtrack.py.in] \
+		[src/gui/clusterid.cfg:src/gui/clusterid.cfg] \
+		[lib/SequenceScore/include/SequenceScoring.h:lib/SequenceScore/include/SequenceScoring.h] \
                 [lib/SequenceScore/include/Error.h:lib/SequenceScore/include/Error.h] \
-                [lib/ANNClassify/include/ANNClassify/ANNClassify.h:lib/ANNClassify/include/ANNClassify/ANNClassify.h])
-
+                [lib/ANNClassify/include/ANNClassify/ANNClassify.h:lib/ANNClassify/include/ANNClassify/ANNClassify.h] \
+		[doc/xtrack_user_guide.pdf:doc/xtrack_user_guide.pdf] \
+		[doc/Hints-and-Tips-to-Apply-Clustering-and-Tracking.pptx:doc/Hints-and-Tips-to-Apply-Clustering-and-Tracking.pptx])
 
 AC_CONFIG_SUBDIRS([lib/ANNClassify])
 

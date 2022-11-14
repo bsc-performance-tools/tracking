@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 try:
@@ -199,13 +200,14 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.DPI     = 100
     self.Fig1    = Figure((5.0, 4.0), dpi=self.DPI)
     self.Fig2    = Figure((5.0, 4.0), dpi=self.DPI)
+    self.Fig1.set_tight_layout(True)
+    self.Fig2.set_tight_layout(True)
     self.Canvas1 = FigureCanvas(self.Panel, -1, self.Fig1)
     self.Canvas2 = FigureCanvas(self.Panel, -1, self.Fig2)
     self.Fig1.set_facecolor("white")
     self.Fig2.set_facecolor("white")
 
     self.PlotAxes = self.Fig1.add_subplot(111)
-
      
     # Create timers
     self.PlayTimer = wx.Timer(self)
@@ -278,7 +280,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.SizerAxesControls2.Add( self.SizerYAxis, 1, wx.EXPAND )
     self.SizerAxesControls2.Add( self.SizerZAxis, 1, wx.EXPAND )
     self.SizerAxesBox.Add( Gap(wx.VERTICAL), 1, wx.EXPAND )
-    self.SizerAxesBox.Add( self.SizerAxesControls1, 0.1, wx.EXPAND )
+    self.SizerAxesBox.Add( self.SizerAxesControls1, 0, wx.EXPAND )
     self.SizerAxesBox.Add( self.SizerAxesControls2, 50, wx.EXPAND )
 
     # Swap axes button
@@ -286,7 +288,7 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
     self.Bind(wx.EVT_BUTTON, self.on_Swap_Button, self.AxesSwapButton)
 
     # 3D button
-    self.Activate3DButton = wx.ToggleButton(self.Panel, -1, "3D", size=(30, -1))
+    self.Activate3DButton = wx.ToggleButton(self.Panel, -1, "3D")
     self.Bind(wx.EVT_TOGGLEBUTTON, self.on_3D_Button, self.Activate3DButton)
 
     self.SizerAxesControls1.Add( self.AxesSwapButton, 2, wx.EXPAND )
@@ -763,11 +765,12 @@ class MainFrame(wx.Frame, animation.TimedAnimation):
 
     if self.Activate3DButton.GetValue():
       self.ZAxisCombo.Enable()
+      self.Fig1.clf()
       self.PlotAxes = self.Fig1.add_subplot(111, projection='3d')
     else:
       self.ZAxisCombo.Disable()
+      self.Fig1.clf()
       self.PlotAxes = self.Fig1.add_subplot(111)
-
 
     self.Plotter.Replot(True)
     return

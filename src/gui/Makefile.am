@@ -5,7 +5,7 @@ GUI_TEMPLATE          = xtrack.py.in
 GUI_LAUNCHER = $(GUI_LAUNCHER_TEMPLATE:.in=)
 GUI          = $(GUI_TEMPLATE:.in=)
 
-ICONS_DIR    = icons
+ICONS_DIR    = $(top_srcdir)/src/gui/icons
 
 PARAVER_CFGS = clusterid.cfg
 

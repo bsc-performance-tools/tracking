@@ -1,5 +1,12 @@
 ChangeLog 'Tracking'
 
+2022-11-14 German Llort <german.llort@bsc.es>
+	* Upgrades scripts to Python 3 
+	* Adds links to allow builds in subfolders
+	* Fixes bug in manual mode when the sequences file contains empty lines
+	* Upgrades GUI to matplotlib 3+
+	* Upgrades version to 2.6.14
+
 2022-05-25 German Llort <german.llort@bsc.es>
 	* Stays compatible with Paraver API changes beyond version >= 4.10.0
 

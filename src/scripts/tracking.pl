@@ -372,7 +372,7 @@ print "\n";
 #
 print "+ Scaling clustering frames... ";
 
-my $CMD = "python ".$ENV{'TRACKING_HOME'}."/bin/@sub_SCRIPT_SCALE_FRAMES@ ";
+my $CMD = $ENV{'TRACKING_HOME'}."/bin/@sub_SCRIPT_SCALE_FRAMES@ ";
 if ($DimensionsToScale ne "") 
 {
   $CMD .= "-s $DimensionsToScale ";
@@ -411,7 +411,10 @@ for ($i=0; $i<@InputTraces; $i++)
     last;
   }
 }
-print "YES!\n";
+if ($AllAligned == 1)
+{
+  print "YES!\n";
+}
 
 #
 ### Filter clusters below a minimum time percentage
