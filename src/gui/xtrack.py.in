@@ -32,7 +32,7 @@ Verbose = False
 INSTALLATION_PATH=os.getenv('TRACKING_HOME')
 
 
-class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
+class CheckListCtrl(CheckListCtrlMixin, wx.ListCtrl, ListCtrlAutoWidthMixin):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, -1, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         CheckListCtrlMixin.__init__(self)

@@ -105,6 +105,7 @@ class PlottingManager:
 
   def ClearAxes1(self):
     self.GUI.ClearThumbs()
+    self.ScatterPlotAxes.cla()
     self.Scatters.clear()
     self.Centroids.clear()
     self.Hulls.clear()
