@@ -732,7 +732,6 @@ void SequenceLink::ComputeGlobalSequences(vector<DoubleLinks *> &AllPairs)
 {
   int count = 0;
   DoubleLinks_iterator_t it;
-  //AtLeastOneUntracked = false;
 
   DoubleLinks *First = AllPairs[0];
 
@@ -847,9 +846,10 @@ void SequenceLink::FindUntracked()
 {
   int NumFrames = ClustersInfoData.size();
   int NumTrackedObjects = TrackedObjects.size();
+  AtLeastOneUntracked = false;
   ObjectSequence_t tmp;
 
-  cout << "+ Filtering untracked objects..." << endl << endl;
+  cout << endl << "+ Filtering untracked objects..." << endl << endl;
 
   for (int Frame = 0; Frame < NumFrames; Frame ++)
   {
@@ -881,22 +881,20 @@ void SequenceLink::FindUntracked()
         }
       }
 
-      /*
       if (Untracked.size() > 0)
       {
         AtLeastOneUntracked = true;
       }
-      */
       tmp.push_back( Untracked );
     }
   }
 
-//  if (AtLeastOneUntracked)
-//  {
+  if (AtLeastOneUntracked)
+  {
     UntrackedObjects.push_back( tmp );
     /* DEBUG */
     write(cout, UntrackedObjects, "   ", "+", " <-> "); 
-//  }
+  }
 }
 
 void SequenceLink::FilterByTime(double TimeThreshold)

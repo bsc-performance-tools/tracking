@@ -65,6 +65,7 @@ class SequenceScoring: public Error
 
     int FindSimultaneousClusters (ClusterID_t ClusterID, SimultaneousClusters_t &Simultaneous);
 
+    void TimeCorrelation(SequenceScoring *SS2, Matchings_t &SequenceMatching);
     void TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScoring *SS2, Matchings_t &SequenceMatching);
 
   private:

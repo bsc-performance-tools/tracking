@@ -56,7 +56,7 @@ sub PrintUsage
   print "  -s DIM1,DIM2...\n";
   print "        Select the dimensions to scale with the number of tasks (DEPRECATED).\n";
   print "  -t THRESHOLD\n";
-  print "        Minimum likeliness percentage in order to match two clusters (special values: all | first).\n";
+  print "        Minimum likeliness percentage in order to match two clusters (special values: any | first).\n";
   print "  -v[v] Run in verbose mode (-vv for extra debug messages).\n";
   print "  -x CLUSTERING_CONFIG_XML\n";
   print "        Specify the clustering configuration to automatically cluster the traces.\n";

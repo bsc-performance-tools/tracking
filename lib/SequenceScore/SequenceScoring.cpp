@@ -365,6 +365,13 @@ void SequenceScoring::PrintClustersScore(ClusterScore_t &Clusters)
 
 void SequenceScoring::TimeCorrelation(DoubleLinks *UnivocalLinks, SequenceScoring *SS2, Matchings_t &SequenceMatchings)
 {
+  if (UnivocalLinks == NULL && (GlobalSequence.size() == SS2->GlobalSequence.size()))
+  {
+    /* Special case: there's no hints from other trackers, and the global sequences have the same length, do a direct correlation between the sequences */
+    GetMatchingsBetweenSequences( GlobalSequence, SS2->GlobalSequence, SequenceMatchings );
+    return;
+  }
+
   /* UnivocalLinks is a map of clusters linked 1 to 1 
         From -> To
            1 -> 1

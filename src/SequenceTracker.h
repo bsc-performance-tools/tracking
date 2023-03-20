@@ -12,7 +12,7 @@ using std::map;
 class SequenceTracker : public Tracker
 {
   public:
-    SequenceTracker(ClustersAlignment *alignments_frame_1, ClustersAlignment *alignments_frame_2, DoubleLinks *univocal_links);
+    SequenceTracker(ClustersAlignment *alignments_frame_1, ClustersAlignment *alignments_frame_2, DoubleLinks *univocal_links = NULL);
     ~SequenceTracker();
 
     void RunTracker();

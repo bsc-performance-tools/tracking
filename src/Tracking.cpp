@@ -240,19 +240,21 @@ void Tracking::RunTrackers1()
   {
     if (UseAlignment)
     {
-      cout << endl << "+ Computing clusters alignment sequence for trace " << i+1 << "..." << endl;
+      cout << endl << "+ Computing clusters alignment sequence for frame " << i+1 << "..." << endl;
 
       Alignments.push_back( new ClustersAlignment( InputAlignments[i], InputCINFOs[i] ) );
+
+      if (Verbose) Alignments.back()->Print();
 
     }
     if (UseCallers)
     {
-      cout << "+ Computing histogram of callers per cluster for trace " << i+1 << "..." << endl;
+      cout << "+ Computing histogram of callers per cluster for frame " << i+1 << "..." << endl;
       
       Histograms.push_back( new CallersHistogram( InputTraces[i], CallersCFG, OutputHistoCallers[i]) );
       if (Histograms[i]->size() <= 0)
       {
-        cout << "WARNING: Callers histogram for trace " << i+1 << " is empty! Callers tracker will not be used, try increasing the callers level..." << endl;
+        cout << "WARNING: Callers histogram for frame " << i+1 << " is empty! Callers tracker will not be used, try increasing the callers level..." << endl;
       }
 
       cout << endl;
@@ -265,7 +267,7 @@ void Tracking::RunTrackers1()
   {
     for (int i = 0; i < NumberOfTraces; i++)
     {
-      cout << "+ Running SPMDiness tracker on trace " << i+1 << "..." << endl << endl;
+      cout << "+ Running SPMDiness tracker on frame " << i+1 << "..." << endl << endl;
       FramesMatrix[i][i].BySPMD = new SPMDTracker( Alignments[i] );
       FramesMatrix[i][i].BySPMD->Track();
     }
@@ -281,43 +283,43 @@ void Tracking::RunTrackers1()
 
     if (UseDensity)
     {
-      cout << "+ Running density tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      cout << "+ Running density tracker between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
       FramesMatrix[frame1][frame2].ByDensity = new DensityTracker( ClustersInfoData[frame1], ClustersInfoData[frame2] );
       FramesMatrix[frame1][frame2].ByDensity->Track();
     }
     else
     {
-      cout << "+ Density tracker has been disabled" << endl << endl;
+      cout << "+ Density tracker doesn't run between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
     }
 
     if (UseDistance)
     {
-      cout << "+ Running distance tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      cout << "+ Running distance tracker between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
       FramesMatrix[frame1][frame2].ByDistance = new DistanceTracker(frame1, InputCSVs[frame1], frame2, InputCSVs[frame2]);
       FramesMatrix[frame1][frame2].ByDistance->Track();
 
-      cout << "+ Running distance tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+      cout << "+ Running distance tracker between frames " << frame2+1 << " and " << frame1+1 << endl << endl;
       FramesMatrix[frame2][frame1].ByDistance = new DistanceTracker(frame2, InputCSVs[frame2], frame1, InputCSVs[frame1]);
       FramesMatrix[frame2][frame1].ByDistance->Track();
     }
     else
     {
-      cout << "+ Distance tracker has been disabled" << endl << endl;
+      cout << "+ Distance tracker doesn't run between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
     }
 
     if ((UseCallers) && (Histograms[frame1]->size() > 0) && (Histograms[frame2]->size() > 0))
     {
-      cout << "+ Running callers tracker between traces " << frame1+1 << " and " << frame2+1 << endl << endl;
+      cout << "+ Running callers tracker between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
       FramesMatrix[frame1][frame2].ByCallers = new CallersTracker( Histograms[frame1], Histograms[frame2] );
       FramesMatrix[frame1][frame2].ByCallers->Track();
 
-      cout << "+ Running callers tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+      cout << "+ Running callers tracker between frames " << frame2+1 << " and " << frame1+1 << endl << endl;
       FramesMatrix[frame2][frame1].ByCallers = new CallersTracker( Histograms[frame2], Histograms[frame1] );
       FramesMatrix[frame2][frame1].ByCallers->Track();
     }
     else
     {
-      cout << "+ Callers tracker has been disabled" << endl << endl;
+      cout << "+ Callers tracker doesn't run between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
     }
   }
 }
@@ -336,6 +338,7 @@ void Tracking::CombineTrackers1()
 
     cout << "+ 2-way links from frame " << frame1+1 << " to " << frame2+1 << ":" << endl << endl;
     FramesMatrix[frame1][frame2].TwoWay->print();
+    cout << endl;
   }
 }
 
@@ -352,7 +355,7 @@ void Tracking::RunTrackers2()
 
       if ((Score1 < MinimumScore) || (Score2 < MinimumScore))
       {
-        cout << "WARNING: Skipping time sequences correlation between traces " << frame1+1 << " and " << frame2+1;
+        cout << "WARNING: Skipping time sequences correlation between frames " << frame1+1 << " and " << frame2+1;
         cout << " due to low scores (Score1=" << Score1 << ", Score2=" << Score2 << ", Minimum= " << MinimumScore << ")" << endl;
       }
       else
@@ -366,10 +369,16 @@ void Tracking::RunTrackers2()
         }
         if ((UnivocalLinks->size() > 0) && (UnivocalLinks->size() < FramesMatrix[frame1][frame2].TwoWay->size()))
         {
-          cout << "+ Running sequence tracker between traces " << frame2+1 << " and " << frame1+1 << endl << endl;
+          cout << "+ Running sequence tracker between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
           FramesMatrix[frame1][frame2].BySequence = new SequenceTracker( Alignments[frame1], Alignments[frame2], UnivocalLinks );
           FramesMatrix[frame1][frame2].BySequence->Track();
         }
+	else if (UnivocalLinks->size() == 0)
+	{
+	  cout << "+ Attempting to use sequence tracker without hints from other trackers between frames " << frame1+1 << " and " << frame2+1 << endl << endl;
+	  FramesMatrix[frame1][frame2].BySequence = new SequenceTracker( Alignments[frame1], Alignments[frame2] );
+          FramesMatrix[frame1][frame2].BySequence->Track();
+	}
       }
     }
   }
@@ -386,8 +395,9 @@ void Tracking::CombineTrackers2()
     {
       DoubleLinks *SequenceLinks = BySequence->getLinks( Threshold );
 
-      if (SequenceLinks->size() > 0)
+      if ((SequenceLinks->size() > 0) && (TrackersAppliedAtRound1.size() > 0))
       {
+	/* Combine all trackers */
         cout << endl << "+ Combining all trackers for frames " << frame1+1 << " and " << frame2+1 << "..." << endl << endl;
 
         if (Verbose)
@@ -407,10 +417,24 @@ void Tracking::CombineTrackers2()
         cout << "+ Resulting links between frames " << frame1+1 << " and " << frame2+1 << ":" << endl << endl;
         FramesMatrix[frame1][frame2].Final->print();
       }
+
+      else if (SequenceLinks->size() > 0)
+      {
+	/* Rely only on the sequence tracker */
+        if (Verbose)
+        {
+          cout << endl << "+ Between frames " << frame1+1 << " and " << frame2+1 << "..." << endl << endl;
+          cout << "... 2-way links from SEQUENCE tracker:" << endl << endl;
+          SequenceLinks->print();
+          cout << endl;
+        }
+	FramesMatrix[frame1][frame2].Final = SequenceLinks;
+      }
     }
 
     if (FramesMatrix[frame1][frame2].Final == NULL)
     {
+      /* Ignore sequence tracker */
       FramesMatrix[frame1][frame2].Final = FramesMatrix[frame1][frame2].TwoWay;
       FramesMatrix[frame1][frame2].TwoWay = NULL; /* To avoid double free at destructor */
     }
@@ -435,7 +459,7 @@ void Tracking::BuildFinalSequence()
 
   FinalSequence = new SequenceLink(AllPairs, ClustersInfoData, TimeThresholdAfter);
 
-  cout << "+ Final sequences: " << endl << endl;
+  cout << endl << "+ Final sequences: " << endl << endl;
 
   FinalSequence->write(cout, true, true);
   FinalSequence->write(fd,   true, false);
