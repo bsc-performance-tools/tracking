@@ -190,7 +190,9 @@ void CallersHistogram::compute3D()
       cerr << "ERROR: CallersHistogram::Compute3D: Problem loading trace '" << Tracename << "'" << endl;
       exit(0);
     }
-    if (CFGLoader::loadCFG(myKernel, CFG, trace, windows, histograms, dummy_options))
+
+    ifstream cfg_file_stream(CFG);
+    if (CFGLoader::loadCFG(myKernel, trace, cfg_file_stream, windows, histograms, dummy_options))
     {
       parseHistogram(histograms[0]);
       print();

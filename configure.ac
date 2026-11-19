@@ -5,9 +5,9 @@
 #    Initializations    #
 #########################
 
-m4_define([tracking_major], [2])
-m4_define([tracking_minor], [7])
-m4_define([tracking_micro], [1])
+m4_define([tracking_major], [26])
+m4_define([tracking_minor], [11])
+m4_define([tracking_micro], [0])
 
 m4_define([tracking_version], [tracking_major.tracking_minor.tracking_micro])
 
